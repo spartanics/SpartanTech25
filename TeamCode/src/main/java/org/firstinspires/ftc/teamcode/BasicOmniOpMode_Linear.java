@@ -103,7 +103,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
     private LaunchControl launchControl;
     private LaunchState launchState;
     final double LAUNCHER_TARGET_VELOCITY = 1125;
-    final double LAUNCHER_MIN_VELOCITY = 1075;
+    final double LAUNCHER_MIN_VELOCITY = 900;
     final double FEED_TIME = 0.20;
     final double TIME_BETWEEN_SHOTS = 2;
     public void goForwardFor2Secs() {
@@ -192,7 +192,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
-            double intakePower = gamepad2.left_stick_y*0.3;
+            double intakePower = gamepad2.left_stick_y*0.6;
 
             switch (launchControl) {
                 case LISTEN:
@@ -282,6 +282,9 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
             telemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
             telemetry.addData("intake", intakePower);
+            telemetry.addData("launch_state", launchState);
+            telemetry.addData("launch_control", launchControl);
+            telemetry.addData("launch_velocity","%4.2f", launcher.getVelocity());
             telemetry.update();
         }
     }}
