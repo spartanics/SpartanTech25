@@ -137,6 +137,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
                     if(shotTimer.seconds() > TIME_BETWEEN_SHOTS){
                         launchState = LaunchState.IDLE;
+                        launcher.setVelocity(0);
                         return true;
                     }
                 }
