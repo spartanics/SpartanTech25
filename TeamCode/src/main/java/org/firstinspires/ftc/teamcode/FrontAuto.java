@@ -297,7 +297,7 @@ public class FrontAuto extends OpMode
      */
     @Override
     public void start() {
-        intake.setPower(.1);
+        intake.setPower(.5);
     }
 
     /*
@@ -455,6 +455,7 @@ public class FrontAuto extends OpMode
          * after the last "case" that runs every loop. This means we can avoid a lot of
          * "copy-and-paste" that non-state machine autonomous routines fall into.
          */
+
         telemetry.addData("AutoState", autonomousState);
         telemetry.addData("LauncherState", launchState);
         telemetry.addData("Motor Current Positions", "leftFront (%d), rightFront (%d)",
