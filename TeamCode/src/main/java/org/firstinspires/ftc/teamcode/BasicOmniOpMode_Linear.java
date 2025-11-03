@@ -137,6 +137,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
                     if(shotTimer.seconds() > TIME_BETWEEN_SHOTS){
                         launchState = LaunchState.IDLE;
+                        launcher.setVelocity(0);
                         return true;
                     }
                 }
@@ -192,11 +193,11 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
-            double intakePower = gamepad2.left_stick_y*0.6;
+            double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger)*0.6;
 
             switch (launchControl) {
                 case LISTEN:
-                    if (gamepad2.y) {
+                    if (gamepad1.y) {
                         launch(true);
                         launchControl = LaunchControl.LAUNCHING;
                     }
@@ -214,6 +215,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
             // Combine the joystick requests for each axis-motion to determine each wheel's power.
             // Set up a variable for each drive wheel to save the power level for telemetry.
+
             double leftFrontPower  = axial + lateral + yaw;
             double rightFrontPower = axial - lateral - yaw;
             double leftBackPower   = axial - lateral + yaw;

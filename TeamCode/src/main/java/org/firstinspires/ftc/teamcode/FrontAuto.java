@@ -122,6 +122,7 @@ public class FrontAuto extends OpMode
     private DcMotorEx launcher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
+    private DcMotor intake;
 
     /*
      * TECH TIP: State Machines
@@ -188,7 +189,7 @@ public class FrontAuto extends OpMode
          * Later in our code, we will progress through the state machine by moving to other enum members.
          * We do the same for our launcher state machine, setting it to IDLE before we use it later.
          */
-        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
+        autonomousState = AutonomousState.LAUNCH;
         launchState = LaunchState.IDLE;
 
 
@@ -201,6 +202,7 @@ public class FrontAuto extends OpMode
         leftBackDrive  = hardwareMap.get(DcMotor.class, "left_back_drive");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
         rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
+        intake = hardwareMap.get(DcMotor.class, "intake");
         launcher = hardwareMap.get(DcMotorEx.class,"launcher");
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
@@ -275,6 +277,7 @@ public class FrontAuto extends OpMode
         leftFeeder.setPower(0);
 
 
+
         /*
          * Here we allow the driver to select which alliance we are on using the gamepad.
          */
@@ -294,6 +297,7 @@ public class FrontAuto extends OpMode
      */
     @Override
     public void start() {
+        intake.setPower(.5);
     }
 
     /*
@@ -311,7 +315,7 @@ public class FrontAuto extends OpMode
          * we know our enum isn't reflecting a different state.
          */
         switch (autonomousState){
-            case DRIVING_AWAY_FROM_GOAL1:
+            /*case DRIVING_AWAY_FROM_GOAL1:
 
 
                 robotRotationAngle = -180;
@@ -326,7 +330,7 @@ public class FrontAuto extends OpMode
                 autonomousState = AutonomousState.COMPLETE;
             }
             break;
-
+                */
 
 
             /*
@@ -364,7 +368,7 @@ public class FrontAuto extends OpMode
                         rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         launcher.setVelocity(0);
-                        autonomousState = AutonomousState.COMPLETE;
+                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
                     }
                 }
                 break;
@@ -375,20 +379,21 @@ public class FrontAuto extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if(drive(DRIVE_SPEED, 48, DistanceUnit.INCH, 1)){
+                if(drive(DRIVE_SPEED, -6, DistanceUnit.INCH, 1)){
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.ROTATING;
+                    intake.setPower(0);
                 }
                 break;
 
             case ROTATING:
                 if(alliance == Alliance.RED){
-                    robotRotationAngle = -45;
-                } else if (alliance == Alliance.BLUE) {
                     robotRotationAngle = 45;
+                } else if (alliance == Alliance.BLUE) {
+                    robotRotationAngle = -45;
                 }
 
                 if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
@@ -402,12 +407,12 @@ public class FrontAuto extends OpMode
 
             case DRIVING_OFF_LINE:
 
-                if(drive(DRIVE_SPEED, 89, DistanceUnit.INCH, 1)) {
+                if(drive(DRIVE_SPEED, -89, DistanceUnit.INCH, 1)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.LAUNCH;
+                    autonomousState = AutonomousState.COMPLETE;
 
                 }
                 break;
@@ -450,6 +455,7 @@ public class FrontAuto extends OpMode
          * after the last "case" that runs every loop. This means we can avoid a lot of
          * "copy-and-paste" that non-state machine autonomous routines fall into.
          */
+
         telemetry.addData("AutoState", autonomousState);
         telemetry.addData("LauncherState", launchState);
         telemetry.addData("Motor Current Positions", "leftFront (%d), rightFront (%d)",
