@@ -194,6 +194,13 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
             double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger)*0.6;
+            double feederPower = 0.0;
+            if (gamepad1.dpad_left)
+                feederPower += 0.2;
+            if (gamepad1.dpad_right)
+                feederPower -= 0.2;
+            leftFeeder.setPower(feederPower);
+            rightFeeder.setPower(feederPower);
 
             switch (launchControl) {
                 case LISTEN:
