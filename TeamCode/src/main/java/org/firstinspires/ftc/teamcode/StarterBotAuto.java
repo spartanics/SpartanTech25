@@ -63,7 +63,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * main robot "loop," continuously checking for conditions that allow us to move to the next step.
  */
 
-@Autonomous(name="StarterBotAuto", group="StarterBot")
+@Autonomous(name="BeginnerTest", group="StarterBot")
 @Disabled
 public class StarterBotAuto extends OpMode
 {

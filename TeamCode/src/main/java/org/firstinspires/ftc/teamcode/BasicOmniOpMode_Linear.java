@@ -67,7 +67,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Test1", group="Linear OpMode")
+@TeleOp(name="TeleOpNormal", group="Linear OpMode")
 //@Disabled
 public class BasicOmniOpMode_Linear extends LinearOpMode {
 
@@ -195,8 +195,17 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double yaw     =  gamepad1.right_stick_x;
             double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger)*0.6;
 
+            double feederPower = 0.0;
+
+            if (gamepad1.dpad_left)
+                feederPower += 0.4;
+            if (gamepad1.dpad_right)
+                feederPower -= 0.4;
+
             switch (launchControl) {
                 case LISTEN:
+                    leftFeeder.setPower(feederPower);
+                    rightFeeder.setPower(feederPower);
                     if (gamepad1.y) {
                         launch(true);
                         launchControl = LaunchControl.LAUNCHING;
@@ -278,6 +287,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             leftBackDrive.setPower(leftBackPower);
             rightBackDrive.setPower(rightBackPower);
             intake.setPower(intakePower);
+
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
