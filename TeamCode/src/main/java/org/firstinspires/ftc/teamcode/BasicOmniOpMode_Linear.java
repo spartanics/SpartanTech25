@@ -83,6 +83,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
     private int state = 0; // 0: stop_walking 1: start_walking
     private DcMotor intake = null;
 
+    private final ElapsedTime wiggleTimer = new ElapsedTime();
     private final ElapsedTime shotTimer = new ElapsedTime();
     private final ElapsedTime feederTimer = new ElapsedTime();
     private final ElapsedTime driveTimer = new ElapsedTime();
@@ -96,12 +97,23 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         LAUNCH,
     }
 
+    private enum WiggleState {
+        WIGGLE_BACK,
+        WIGGLE_FRONT
+    }
+    private WiggleState wiggleState;
+    private enum WiggleControl {
+        WIGGLE_LISTEN,
+        WIGGLING
+    }
+    private WiggleControl wiggleControl;
     private enum LaunchControl {
         LISTEN,
         LAUNCHING,
     }
     private LaunchControl launchControl;
     private LaunchState launchState;
+    final double WIGGLE_TIME = 1.0;
     final double LAUNCHER_TARGET_VELOCITY = 1125;
     final double LAUNCHER_MIN_VELOCITY = 900;
     final double FEED_TIME = 0.20;
@@ -144,6 +156,35 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         }
         return false;
     }
+
+    boolean wiggleMachine() {
+        switch (wiggleState) {
+            case WIGGLE_BACK:
+                if (wiggleTimer.seconds() > WIGGLE_TIME) {
+                    launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+                    wiggleState =  WiggleState.WIGGLE_FRONT;
+                    wiggleTimer.reset();
+                    if (gamepad1.back) {
+                        return true;
+                    }
+                }
+                break;
+            case WIGGLE_FRONT:
+                if (wiggleTimer.seconds() > WIGGLE_TIME) {
+                    launcher.setVelocity(-LAUNCHER_TARGET_VELOCITY);
+
+                    wiggleState = WiggleState.WIGGLE_BACK;
+                    wiggleTimer.reset();
+                    if (gamepad1.back) {
+                        return true;
+                    }
+
+                }
+                break;
+        }
+        return false;
+    }
+
     @Override
     public void runOpMode() {
 
@@ -177,6 +218,8 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
         launchState = LaunchState.IDLE;
         launchControl = LaunchControl.LISTEN;
+        wiggleState = WiggleState.WIGGLE_FRONT;
+        wiggleControl = WiggleControl.WIGGLE_LISTEN;
 
         // Wait for the game to start (driver presses START)
         telemetry.addData("Status", "Initialized");
@@ -184,6 +227,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
         waitForStart();
         runtime.reset();
+        wiggleTimer.reset();
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -193,9 +237,26 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
-            double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger)*0.6;
+            double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger)*0.4;
 
             double feederPower = 0.0;
+
+            // wiggle launch
+            switch (wiggleControl) {
+                case WIGGLE_LISTEN:
+                        if (gamepad1.start) {
+                            wiggleControl = WiggleControl.WIGGLING;
+                        }
+                    break;
+                case WIGGLING:
+                    boolean is_done_wiggling = wiggleMachine();
+                    if (is_done_wiggling) {
+                        launcher.setVelocity(0);
+                        wiggleControl = WiggleControl.WIGGLE_LISTEN;
+                    }
+                    break;
+
+            }
 
             if (gamepad1.dpad_left)
                 feederPower += 0.4;
@@ -243,7 +304,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
                 rightBackPower  /= max;
             }
 
-            if (gamepad1.start) {
+            /*if (gamepad1.start) {
                 runtime.reset();
                 state = 1;
             }
@@ -261,7 +322,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
                     rightBackPower = 0.0;
                     state = 0;
                 }
-            }
+            }*/
 
 
             // This is test code:
@@ -297,6 +358,9 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             telemetry.addData("launch_state", launchState);
             telemetry.addData("launch_control", launchControl);
             telemetry.addData("launch_velocity","%4.2f", launcher.getVelocity());
+            telemetry.addData("wiggle_state", wiggleState);
+            telemetry.addData("wiggle_control", wiggleControl);
+            telemetry.addData("Status", "Wiggle_Time: " + wiggleTimer.toString());
             telemetry.update();
         }
     }}
