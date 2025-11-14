@@ -94,7 +94,7 @@ public class AudienceSideCenterAuto extends OpMode
      * robot. Track width is used to determine the amount of linear distance each wheel needs to
      * travel to create a specified rotation of the robot.
      */
-    final double DRIVE_SPEED = 0.5;
+    final double DRIVE_SPEED = 0.8;
     final double ROTATE_SPEED = 0.2;
     final double WHEEL_DIAMETER_MM = 104;
     final double ENCODER_TICKS_PER_REV = 537.7;
@@ -424,7 +424,7 @@ public class AudienceSideCenterAuto extends OpMode
                         rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         launcher.setVelocity(0);
                         intake.setPower(0);
-                        autonomousState = AutonomousState.COMPLETE;
+                        autonomousState = AutonomousState.BACKUP;
                     }
                 }
                 break;
@@ -436,7 +436,7 @@ public class AudienceSideCenterAuto extends OpMode
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.ROTATING;
+                    autonomousState = AutonomousState.TURN45;
 
                 }
                 break;
@@ -453,7 +453,7 @@ public class AudienceSideCenterAuto extends OpMode
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.HIT_GOAL;
+                    autonomousState = AutonomousState.BACK_OUT_OF_LAUNCHLINE;
                 }
                 break;
 
@@ -464,7 +464,7 @@ public class AudienceSideCenterAuto extends OpMode
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.ROTATING;
+                    autonomousState = AutonomousState.COMPLETE;
 
                 }
                 break;
