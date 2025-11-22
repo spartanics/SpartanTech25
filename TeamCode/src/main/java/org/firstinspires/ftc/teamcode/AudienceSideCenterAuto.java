@@ -62,9 +62,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * main robot "loop," continuously checking for conditions that allow us to move to the next step.
  */
 
-@Autonomous(name="AudienceAuto", group="StarterBot")
+@Autonomous(name="AudienceSideCenterAuto", group="StarterBot")
 //@Disabled
-public class AudienceAuto extends OpMode
+public class AudienceSideCenterAuto extends OpMode
 {
 
     final double FEED_TIME = 0.20; //The feeder servos run this long when a shot is requested.
@@ -94,7 +94,7 @@ public class AudienceAuto extends OpMode
      * robot. Track width is used to determine the amount of linear distance each wheel needs to
      * travel to create a specified rotation of the robot.
      */
-    final double DRIVE_SPEED = 0.5;
+    final double DRIVE_SPEED = 0.8;
     final double ROTATE_SPEED = 0.2;
     final double WHEEL_DIAMETER_MM = 104;
     final double ENCODER_TICKS_PER_REV = 537.7;
@@ -153,16 +153,18 @@ public class AudienceAuto extends OpMode
      */
     private enum AutonomousState {
 
-        TEST,
+        DRIVING_SIDE,
+        ROTATING90,
+        DRIVING_TO_GOAL,
+        ROTATING,
+        HIT_GOAL,
         LAUNCH,
         WAIT_FOR_LAUNCH,
-        DRIVING_AWAY_FROM_GOAL,
-        ROTATING,
-        DRIVING_OFF_LINE,
-        ROTATING90,
-        DRIVING_AWAY_FROM_GOAL1,
-        DRIVING_BACK,
-        COMPLETE;
+        BACKUP,
+        TURN45,
+        BACK_OUT_OF_LAUNCHLINE,
+        COMPLETE
+
     }
 
     private AutonomousState autonomousState;
@@ -190,7 +192,7 @@ public class AudienceAuto extends OpMode
          * Later in our code, we will progress through the state machine by moving to other enum members.
          * We do the same for our launcher state machine, setting it to IDLE before we use it later.
          */
-        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
+        autonomousState = AutonomousState.DRIVING_SIDE;
         launchState = LaunchState.IDLE;
 
 
@@ -278,6 +280,7 @@ public class AudienceAuto extends OpMode
         leftFeeder.setPower(0);
 
 
+
         /*
          * Here we allow the driver to select which alliance we are on using the gamepad.
          */
@@ -297,6 +300,7 @@ public class AudienceAuto extends OpMode
      */
     @Override
     public void start() {
+        intake.setPower(.5);
     }
 
     /*
@@ -315,14 +319,83 @@ public class AudienceAuto extends OpMode
          */
         switch (autonomousState){
 
-            /*
-             * Since the first state of our auto is LAUNCH, this is the first "case" we encounter.
-             * This case is very simple. We call our .launch() function with "true" in the parameter.
-             * This "true" value informs our launch function that we'd like to start the process of
-             * firing a shot. We will call this function with a "false" in the next case. This
-             * "false" condition means that we are continuing to call the function every loop,
-             * allowing it to cycle through and continue the process of launching the first ball.
-             */
+
+
+            case DRIVING_SIDE:
+                /*
+                 * This is another function that returns a boolean. This time we return "true" if
+                 * the robot has been within a tolerance of the target position for "holdSeconds."
+                 * Once the function returns "true" we reset the encoders again and move on.
+                 */
+                if(drive(DRIVE_SPEED, 24, DistanceUnit.INCH, 1)){
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.ROTATING90;
+
+                }
+                break;
+
+            case ROTATING90:
+                if(alliance == Alliance.RED){
+                    robotRotationAngle = 90;
+                } else if (alliance == Alliance.BLUE) {
+                    robotRotationAngle = -90;
+                }
+
+                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.DRIVING_TO_GOAL;
+                }
+                break;
+
+            case DRIVING_TO_GOAL:
+
+                if(drive(DRIVE_SPEED, 115, DistanceUnit.INCH, 1)) {
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.ROTATING;
+
+                }
+                break;
+
+            case ROTATING:
+                if(alliance == Alliance.RED){
+                    robotRotationAngle = -45;
+                } else if (alliance == Alliance.BLUE) {
+                    robotRotationAngle = 45;
+                }
+
+                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.HIT_GOAL;
+                }
+                break;
+
+            case HIT_GOAL:
+
+                if(drive(DRIVE_SPEED, 1, DistanceUnit.INCH, 1)) {
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.LAUNCH;
+
+                }
+                break;
+
+
+
+
             case LAUNCH:
                 launch(true);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
@@ -350,95 +423,51 @@ public class AudienceAuto extends OpMode
                         rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         launcher.setVelocity(0);
-                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL1;
                         intake.setPower(0);
+                        autonomousState = AutonomousState.BACKUP;
                     }
                 }
                 break;
 
-            case DRIVING_AWAY_FROM_GOAL:
-                /*
-                 * This is another function that returns a boolean. This time we return "true" if
-                 * the robot has been within a tolerance of the target position for "holdSeconds."
-                 * Once the function returns "true" we reset the encoders again and move on.
-                 */
-                if(drive(DRIVE_SPEED, 80, DistanceUnit.INCH, 1)){
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.ROTATING;
-                }
-                break;
+            case BACKUP:
 
-            case ROTATING:
-                if(alliance == Alliance.RED){
-                    robotRotationAngle = -48;
-                } else if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 48;
-                }
-
-                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING_OFF_LINE;
-                }
-                break;
-
-            case DRIVING_OFF_LINE:
-                intake.setPower(.5);
-                if(drive(DRIVE_SPEED, 53, DistanceUnit.INCH, 1)) {
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.LAUNCH;
-
-                }
-                break;
-
-
-            case ROTATING90:
-                if(alliance == Alliance.RED){
-                    robotRotationAngle = 48;
-                } else if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -48;
-                }
-
-                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING_BACK;
-                }
-                break;
-
-            case DRIVING_AWAY_FROM_GOAL1:
                 if(drive(DRIVE_SPEED, -10, DistanceUnit.INCH, 1)) {
-                    //This makes the robot push the balls into the goal.
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.ROTATING90;
+                    autonomousState = AutonomousState.TURN45;
+
                 }
                 break;
 
-            case DRIVING_BACK:
-                if(drive(DRIVE_SPEED, -60, DistanceUnit.INCH, 1)) {
-                    //This makes the robot push the balls into the goal.
+            case TURN45:
+                if(alliance == Alliance.RED){
+                    robotRotationAngle = 45;
+                } else if (alliance == Alliance.BLUE) {
+                    robotRotationAngle = -45;
+                }
+
+                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.BACK_OUT_OF_LAUNCHLINE;
+                }
+                break;
+
+            case BACK_OUT_OF_LAUNCHLINE:
+
+                if(drive(DRIVE_SPEED, -60 , DistanceUnit.INCH, 1)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.COMPLETE;
 
+                }
                 break;
-
-        }
 
         }
 
@@ -450,6 +479,7 @@ public class AudienceAuto extends OpMode
          * after the last "case" that runs every loop. This means we can avoid a lot of
          * "copy-and-paste" that non-state machine autonomous routines fall into.
          */
+
         telemetry.addData("AutoState", autonomousState);
         telemetry.addData("LauncherState", launchState);
         telemetry.addData("Motor Current Positions", "leftFront (%d), rightFront (%d)",
