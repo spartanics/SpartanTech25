@@ -29,7 +29,6 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -90,6 +89,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
     private DcMotorEx launcher;
     private CRServo rightFeeder;
     private CRServo leftFeeder;
+    private Servo Blocker;
 
     private enum LaunchState {
         IDLE,
@@ -125,10 +125,6 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             leftFrontDrive.setPower(.2);
         }
     }
-
-
-
-
     boolean launch(boolean shotRequested){
         switch (launchState) {
             case IDLE:
@@ -203,6 +199,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         launcher = hardwareMap.get(DcMotorEx.class, "launcher");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
+        Blocker = hardwareMap.get(Servo.class, "blocker");
 
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
@@ -249,9 +246,9 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             // wiggle launch
             switch (wiggleControl) {
                 case WIGGLE_LISTEN:
-                        if (gamepad1.start) {
-                            wiggleControl = WiggleControl.WIGGLING;
-                        }
+                    if (gamepad1.start) {
+                        wiggleControl = WiggleControl.WIGGLING;
+                    }
                     break;
                 case WIGGLING:
                     boolean is_done_wiggling = wiggleMachine();
@@ -267,6 +264,12 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
                 feederPower += 0.4;
             if (gamepad1.dpad_right)
                 feederPower -= 0.4;
+
+            if (gamepad1.a)
+                Blocker.setPosition(0);
+            if (gamepad1.b)
+                Blocker.setPosition(1);
+
 
 
             switch (launchControl) {
@@ -345,7 +348,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             //leftFrontPower  = gamepad1.x ? 1.0 : 0.0;  // X gamepad
             //leftBackPower   = gamepad1.a ? 1.0 : 0.0;  // A gamepad
             //rightFrontPower = gamepad1.y ? 1.0 : 0.0;  // Y gamepad
-           //rightBackPower  = gamepad1.b ? 1.0 : 0.0;  // B gamepadhttps://research.google.com/colaboratory/faq.html
+            //rightBackPower  = gamepad1.b ? 1.0 : 0.0;  // B gamepadhttps://research.google.com/colaboratory/faq.html
 
 
             // Send calculated power to wheels
