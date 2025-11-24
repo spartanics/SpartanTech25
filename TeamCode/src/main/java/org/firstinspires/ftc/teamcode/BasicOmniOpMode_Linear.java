@@ -125,6 +125,10 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             leftFrontDrive.setPower(.2);
         }
     }
+
+
+
+
     boolean launch(boolean shotRequested){
         switch (launchState) {
             case IDLE:
@@ -161,7 +165,8 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         switch (wiggleState) {
             case WIGGLE_BACK:
                 if (wiggleTimer.seconds() > WIGGLE_TIME) {
-                    launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+                    // Always go back when wiggling
+                    launcher.setVelocity(-LAUNCHER_TARGET_VELOCITY);
                     wiggleState =  WiggleState.WIGGLE_FRONT;
                     wiggleTimer.reset();
                     if (gamepad1.back) {
@@ -237,7 +242,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             double lateral =  gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
-            double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger)*0.4;
+            double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger);
 
             double feederPower = 0.0;
 
@@ -262,6 +267,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
                 feederPower += 0.4;
             if (gamepad1.dpad_right)
                 feederPower -= 0.4;
+
 
             switch (launchControl) {
                 case LISTEN:
