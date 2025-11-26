@@ -114,8 +114,8 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
     private LaunchControl launchControl;
     private LaunchState launchState;
     final double WIGGLE_TIME = 1.0;
-    final double LAUNCHER_TARGET_VELOCITY = 1125;
-    final double LAUNCHER_MIN_VELOCITY = 900;
+    final double LAUNCHER_TARGET_VELOCITY = 1110;
+    final double LAUNCHER_MIN_VELOCITY = 940;
     final double FEED_TIME = 0.20;
     final double TIME_BETWEEN_SHOTS = 2;
     public void goForwardFor2Secs() {
