@@ -389,7 +389,7 @@ public class FrontAuto12Balls extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if(drive(DRIVE_SPEED*1.25, -59, DistanceUnit.INCH, 0.7)){
+                if(drive(DRIVE_SPEED, -56, DistanceUnit.INCH, 0.7)){
 //                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -412,7 +412,7 @@ public class FrontAuto12Balls extends OpMode
                     Blocker.setPosition(BLOCKER_UP);
                 }
 
-                if(rotate(ROTATE_SPEED*1.25, robotRotationAngle, AngleUnit.DEGREES,0.7)){
+                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,0.7)){
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -424,20 +424,20 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING_OFF_LINE:
 
-                if(drive(DRIVE_SPEED*0.5, 52.5, DistanceUnit.INCH, 0.7)) {
+                if(drive(DRIVE_SPEED*0.6, 52, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.DRIVING2;
-                    intake.setPower(1.5);
+                    intake.setPower(2);
 
                 }
                 break;
 
             case DRIVING2:
 
-                if(drive(DRIVE_SPEED*1.25, -52.5, DistanceUnit.INCH, 0.7)) {
+                if(drive(DRIVE_SPEED, -52, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -453,7 +453,7 @@ public class FrontAuto12Balls extends OpMode
                 } else if (alliance == Alliance.BLUE) {
                     robotRotationAngle = 40;
                 }
-                if(rotate(ROTATE_SPEED*1.25, robotRotationAngle, AngleUnit.DEGREES,0.7)){
+                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,0.6)){
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -465,7 +465,7 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING_AWAY_FROM_GOAL1:
 
-                if(drive(DRIVE_SPEED*2, 55, DistanceUnit.INCH, 0.9)){
+                if(drive(DRIVE_SPEED, 58.5, DistanceUnit.INCH, 1)){
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
