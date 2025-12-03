@@ -125,7 +125,7 @@ public class FrontAuto12Balls extends OpMode
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
     private DcMotor intake;
-    private Servo Blocker;
+    private Servo blocker;
 
     /*
      * TECH TIP: State Machines
@@ -214,7 +214,7 @@ public class FrontAuto12Balls extends OpMode
         launcher = hardwareMap.get(DcMotorEx.class,"launcher");
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
-        Blocker = hardwareMap.get(Servo.class, "blocker");
+        blocker = hardwareMap.get(Servo.class, "blocker");
 
 
         /*
@@ -267,6 +267,8 @@ public class FrontAuto12Balls extends OpMode
          * both work to feed the ball into the robot.
          */
         leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        blocker.setPosition(BLOCKER_DOWN);
+
 
 
         // Tell the driver that initialization is complete.
@@ -406,10 +408,10 @@ public class FrontAuto12Balls extends OpMode
             case ROTATING:
                 if(alliance == Alliance.RED){
                     robotRotationAngle = 45;
-                    Blocker.setPosition(BLOCKER_UP);
+                    blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.BLUE) {
                     robotRotationAngle = -45;
-                    Blocker.setPosition(BLOCKER_UP);
+                    blocker.setPosition(BLOCKER_UP);
                 }
 
                 if(rotate(ROTATE_SPEED*1.25, robotRotationAngle, AngleUnit.DEGREES,0.7)){
@@ -459,7 +461,7 @@ public class FrontAuto12Balls extends OpMode
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL1;
-                    Blocker.setPosition(BLOCKER_DOWN);
+                    blocker.setPosition(BLOCKER_DOWN);
                 }
                 break;
 
