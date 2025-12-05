@@ -68,7 +68,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 public class FrontAuto12Balls extends OpMode
 {
 
-    final double FEED_TIME = 0.20; //The feeder servos run this long when a shot is requested.
+    final double FEED_TIME = 0.125; //The feeder servos run this long when a shot is requested.
 
     /*
      * When we control our launcher motor, we are using encoders. These allow the control system
@@ -103,6 +103,7 @@ public class FrontAuto12Balls extends OpMode
     final double TRACK_WIDTH_MM = 420;
     final double BLOCKER_UP = 0;
     final double BLOCKER_DOWN = 1;
+    final double GOAL_ANGLE = 0.6;
     int shotsToFire = 3; //The number of shots to fire in this auto.
 
     double robotRotationAngle = 45;
@@ -126,6 +127,7 @@ public class FrontAuto12Balls extends OpMode
     private CRServo rightFeeder = null;
     private DcMotor intake;
     private Servo blocker;
+    private Servo angle;
 
     /*
      * TECH TIP: State Machines
@@ -215,6 +217,7 @@ public class FrontAuto12Balls extends OpMode
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
         blocker = hardwareMap.get(Servo.class, "blocker");
+        angle = hardwareMap.get(Servo.class, "angle");
 
 
         /*
@@ -353,6 +356,9 @@ public class FrontAuto12Balls extends OpMode
              * allowing it to cycle through and continue the process of launching the first ball.
              */
             case LAUNCH:
+
+                angle.setPosition(GOAL_ANGLE);
+
                 launch(true);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
                 break;
@@ -426,6 +432,8 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING_OFF_LINE:
 
+                launcher.setVelocity(-100);
+
                 if(drive(DRIVE_SPEED*0.5, 52.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -433,6 +441,7 @@ public class FrontAuto12Balls extends OpMode
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.DRIVING2;
                     intake.setPower(1.5);
+
 
                 }
                 break;
