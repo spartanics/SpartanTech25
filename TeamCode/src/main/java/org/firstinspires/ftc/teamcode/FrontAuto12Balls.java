@@ -406,10 +406,10 @@ public class FrontAuto12Balls extends OpMode
                 break;
 
             case ROTATING:
-                if(alliance == Alliance.RED){
+                if(alliance == Alliance.BLUE){
                     robotRotationAngle = 45;
                     blocker.setPosition(BLOCKER_UP);
-                } else if (alliance == Alliance.BLUE) {
+                } else if (alliance == Alliance.RED) {
                     robotRotationAngle = -45;
                     blocker.setPosition(BLOCKER_UP);
                 }
@@ -450,9 +450,9 @@ public class FrontAuto12Balls extends OpMode
                 break;
 
             case ROTATE2:
-                if(alliance == Alliance.RED){
+                if(alliance == Alliance.BLUE){
                     robotRotationAngle = -40;
-                } else if (alliance == Alliance.BLUE) {
+                } else if (alliance == Alliance.RED) {
                     robotRotationAngle = 40;
                 }
                 if(rotate(ROTATE_SPEED*1.25, robotRotationAngle, AngleUnit.DEGREES,0.7)){
