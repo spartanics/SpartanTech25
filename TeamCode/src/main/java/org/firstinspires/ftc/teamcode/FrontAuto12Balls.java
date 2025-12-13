@@ -328,7 +328,7 @@ public class FrontAuto12Balls extends OpMode
          * of the members of the enum for a match, since if we find the "break" line in one case,
          * we know our enum isn't reflecting a different state.
          */
-        switch (autonomousState){
+        switch (autonomousState) {
             /*case DRIVING_AWAY_FROM_GOAL1:
 
 
@@ -375,9 +375,9 @@ public class FrontAuto12Balls extends OpMode
                  * state on our state machine. Otherwise, we reset the encoders on our drive motors
                  * and move onto the next state.
                  */
-                if(launch(false)) {
+                if (launch(false)) {
                     shotsToFire -= 1;
-                    if(shotsToFire > 0) {
+                    if (shotsToFire > 0) {
                         autonomousState = AutonomousState.LAUNCH;
                     } else {
                         leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -397,7 +397,7 @@ public class FrontAuto12Balls extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if(drive(DRIVE_SPEED*1.25, -59, DistanceUnit.INCH, 0.7)){
+                if (drive(DRIVE_SPEED * 1.25, -59, DistanceUnit.INCH, 0.7)) {
 //                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -412,15 +412,15 @@ public class FrontAuto12Balls extends OpMode
                 break;
 
             case ROTATING:
-                if(alliance == Alliance.RED){
+                if (alliance == Alliance.BLUE) {
                     robotRotationAngle = 45;
                     blocker.setPosition(BLOCKER_UP);
-                } else if (alliance == Alliance.BLUE) {
+                } else if (alliance == Alliance.RED) {
                     robotRotationAngle = -45;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
-                if(rotate(ROTATE_SPEED*1.25, robotRotationAngle, AngleUnit.DEGREES,0.7)){
+                if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -434,7 +434,7 @@ public class FrontAuto12Balls extends OpMode
 
                 launcher.setVelocity(-100);
 
-                if(drive(DRIVE_SPEED*0.5, 52.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 0.5, 52.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -448,7 +448,7 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING2:
 
-                if(drive(DRIVE_SPEED*1.25, -52.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1.25, -52.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -459,12 +459,12 @@ public class FrontAuto12Balls extends OpMode
                 break;
 
             case ROTATE2:
-                if(alliance == Alliance.RED){
+                if (alliance == Alliance.BLUE) {
                     robotRotationAngle = -40;
-                } else if (alliance == Alliance.BLUE) {
+                } else if (alliance == Alliance.RED) {
                     robotRotationAngle = 40;
                 }
-                if(rotate(ROTATE_SPEED*1.25, robotRotationAngle, AngleUnit.DEGREES,0.7)){
+                if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -476,7 +476,7 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING_AWAY_FROM_GOAL1:
 
-                if(drive(DRIVE_SPEED*2, 55, DistanceUnit.INCH, 0.9)){
+                if (drive(DRIVE_SPEED * 2, 58, DistanceUnit.INCH, 0.9)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -495,31 +495,42 @@ public class FrontAuto12Balls extends OpMode
                 break;
 
             case WAIT_FOR_LAUNCH2:
-            if(launch(false)) {
-                shotsToFire -= 1;
-                if(shotsToFire > 0) {
-                    autonomousState = AutonomousState.LAUNCH2;
-                } else {
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    launcher.setVelocity(0);
-                    autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL2;
-                }
-            }
-            break;
-
-            case DRIVING_AWAY_FROM_GOAL2:
-
-                if(driveWithDirection(DRIVE_SPEED*2, -20, -20, DistanceUnit.INCH, 0.7)){
-                    autonomousState = AutonomousState.COMPLETE;
-                    intake.setPower(0);
+                if (launch(false)) {
+                    shotsToFire -= 1;
+                    if (shotsToFire > 0) {
+                        autonomousState = AutonomousState.LAUNCH2;
+                    } else {
+                        leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        launcher.setVelocity(0);
+                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL2;
+                    }
                 }
                 break;
 
+            case DRIVING_AWAY_FROM_GOAL2:
+
+                if (alliance == Alliance.BLUE) {
+
+                    if (driveWithDirection(DRIVE_SPEED * 2, -20, -20, DistanceUnit.INCH, 0.7)) {
+                        autonomousState = AutonomousState.COMPLETE;
+                        intake.setPower(0);
+                    }else if(alliance == Alliance.RED) {
+                        if (driveWithDirection(DRIVE_SPEED * 2, 20, -20, DistanceUnit.INCH, 0.7)) {
+                            autonomousState = AutonomousState.COMPLETE;
+                            intake.setPower(0);
+                        }
+                    }
 
 
+
+
+                    break;
+
+
+                }
         }
 
         /*
