@@ -120,7 +120,7 @@ public class ContinuousShooting extends LinearOpMode {
     final double FEED_TIME = 0.125; //was 0.20
     final double TIME_BETWEEN_SHOTS = 2;
     private int targetVelocity = 1110;
-    final double GOAL_ANGLE = 0.5;
+    final double GOAL_ANGLE = 0.6;
     final double FAR_ANGLE = 1;
     final double BLOCKER_UP = 0;
     final double BLOCKER_DOWN = 1;
@@ -254,6 +254,7 @@ public class ContinuousShooting extends LinearOpMode {
             double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger);
             if (intakePower > 0){
                 blocker.setPosition(BLOCKER_UP);
+                launcher.setVelocity(-100);
             }
 
             double feederPower = 0.0;
