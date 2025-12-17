@@ -63,9 +63,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * main robot "loop," continuously checking for conditions that allow us to move to the next step.
  */
 
-@Autonomous(name="FrontAuto12Balls", group="StarterBot")
+@Autonomous(name="Backauto6Balls", group="StarterBot")
 //@Disabled
-public class FrontAuto12Balls extends OpMode
+public class Backauto6balls extends OpMode
 {
 
     final double FEED_TIME = 0.125; //The feeder servos run this long when a shot is requested.
@@ -76,8 +76,7 @@ public class FrontAuto12Balls extends OpMode
      * velocity. Here we are setting the target and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1110;
-    final double LAUNCHER_MIN_VELOCITY = 1090;
+    final int TARGET_VELOCITY_FAR = 1690;
 
     /*
      * The number of seconds that we wait between each of our 3 shots from the launcher. This
@@ -103,7 +102,7 @@ public class FrontAuto12Balls extends OpMode
     final double TRACK_WIDTH_MM = 420;
     final double BLOCKER_UP = 0;
     final double BLOCKER_DOWN = 1;
-    final double GOAL_ANGLE = 0.6;
+    final double GOAL_ANGLE = 1;
     int shotsToFire = 3; //The number of shots to fire in this auto.
 
     double robotRotationAngle = 45;
@@ -169,9 +168,11 @@ public class FrontAuto12Balls extends OpMode
         LAUNCH2,
         WAIT_FOR_LAUNCH2,
         DRIVING_AWAY_FROM_GOAL1,
-        COMPLETE,
         DRIVING_AWAY_FROM_GOAL2,
         ROTATE3,
+        DRIVING_AWAY_FROM_GOAL3,
+        DRIVING_AWAY_FROM_GOAL4,
+        COMPLETE,
     }
 
     private AutonomousState autonomousState;
@@ -199,7 +200,7 @@ public class FrontAuto12Balls extends OpMode
          * Later in our code, we will progress through the state machine by moving to other enum members.
          * We do the same for our launcher state machine, setting it to IDLE before we use it later.
          */
-        autonomousState = AutonomousState.LAUNCH;
+        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
         launchState = LaunchState.IDLE;
 
 
@@ -358,6 +359,7 @@ public class FrontAuto12Balls extends OpMode
             case LAUNCH:
 
                 angle.setPosition(GOAL_ANGLE);
+                blocker.setPosition(BLOCKER_DOWN);
 
                 launch(true);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
@@ -386,7 +388,7 @@ public class FrontAuto12Balls extends OpMode
                         rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         launcher.setVelocity(0);
                         intake.setPower(0.6);
-                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
+                        autonomousState = AutonomousState.DRIVING2;
                     }
                 }
                 break;
@@ -397,7 +399,7 @@ public class FrontAuto12Balls extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if (drive(DRIVE_SPEED * 1.25, -59, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1.25, 70, DistanceUnit.INCH, 0.7)) {
 //                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -413,10 +415,10 @@ public class FrontAuto12Balls extends OpMode
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 45;
+                    robotRotationAngle = 48;
                     blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = -45;
+                    robotRotationAngle = -48;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
@@ -425,30 +427,15 @@ public class FrontAuto12Balls extends OpMode
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING_OFF_LINE;
+                    autonomousState = AutonomousState.LAUNCH;
                     intake.setPower(1);
                 }
                 break;
 
-            case DRIVING_OFF_LINE:
-
-                launcher.setVelocity(-100);
-
-                if (drive(DRIVE_SPEED * 0.5, 52.5, DistanceUnit.INCH, 0.7)) {
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING2;
-                    intake.setPower(2);
-
-
-                }
-                break;
 
             case DRIVING2:
 
-                if (drive(DRIVE_SPEED * 1.25, -52.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1.25, 10, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -460,11 +447,11 @@ public class FrontAuto12Balls extends OpMode
 
             case ROTATE2:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -40;
+                    robotRotationAngle = 30;
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = 40;
+                    robotRotationAngle = -30;
                 }
-                if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
+                if (rotate(ROTATE_SPEED * 1, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -476,16 +463,46 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING_AWAY_FROM_GOAL1:
 
-                if (drive(DRIVE_SPEED * 2, 58, DistanceUnit.INCH, 0.9)) {
+                if (drive(DRIVE_SPEED * 0.5, 30, DistanceUnit.INCH, 0.9)) {
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL2;
+                    intake.setPower(1.5);
+                    launcher.setVelocity(-100);
+                    blocker.setPosition(BLOCKER_UP);
+                }
+                break;
+
+            case DRIVING_AWAY_FROM_GOAL2:
+
+                if (drive(DRIVE_SPEED * 1, -35, DistanceUnit.INCH, 0.9)) {
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.ROTATE3;
+                    intake.setPower(0);
+                }
+                break;
+
+            case ROTATE3:
+                if (alliance == Alliance.BLUE) {
+                    robotRotationAngle = -30;
+                } else if (alliance == Alliance.RED) {
+                    robotRotationAngle = 30;
+                }
+                if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.LAUNCH2;
-                    intake.setPower(0);
-                    shotsToFire = 3;
+                    blocker.setPosition(BLOCKER_DOWN);
                 }
                 break;
+
 
 
             case LAUNCH2:
@@ -505,12 +522,12 @@ public class FrontAuto12Balls extends OpMode
                         rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         launcher.setVelocity(0);
-                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL2;
+                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL4;
                     }
                 }
                 break;
 
-            case DRIVING_AWAY_FROM_GOAL2:
+            case DRIVING_AWAY_FROM_GOAL4:
 
                 if (alliance == Alliance.BLUE) {
 
@@ -579,8 +596,8 @@ public class FrontAuto12Balls extends OpMode
                 }
                 break;
             case PREPARE:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY){
+                launcher.setVelocity(TARGET_VELOCITY_FAR);
+                if (launcher.getVelocity() > (0.8*TARGET_VELOCITY_FAR)){
                     launchState = LaunchState.LAUNCH;
                     leftFeeder.setPower(1);
                     rightFeeder.setPower(1);
