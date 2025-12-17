@@ -115,8 +115,8 @@ public class ContinuousShooting extends LinearOpMode {
     private LaunchControl launchControl;
     private LaunchState launchState;
     final double WIGGLE_TIME = 1.0;
-    final double LAUNCHER_TARGET_VELOCITY = 1110;
-    final double LAUNCHER_MIN_VELOCITY = 940;
+    final double LAUNCHER_TARGET_VELOCITY = 1175;
+    final double LAUNCHER_MIN_VELOCITY = 1160;
     final double FEED_TIME = 0.125; //was 0.20
     final double TIME_BETWEEN_SHOTS = 2;
     private int targetVelocity = 1110;
