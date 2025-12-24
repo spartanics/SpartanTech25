@@ -225,12 +225,12 @@ public class RobotAutoDriveToAprilTagOmni extends LinearOpMode
      * <p>
      * Positive Yaw is counter-clockwise
      */
-    public void moveRobot(double x, double y, double yaw) {
+    public void moveRobot(double drive, double strafeLeft, double turnCcw) {
         // Calculate wheel powers.
-        double frontLeftPower    =  x - y - yaw;
-        double frontRightPower   =  x + y + yaw;
-        double backLeftPower     =  x + y - yaw;
-        double backRightPower    =  x - y + yaw;
+        double frontLeftPower    =  drive - strafeLeft - turnCcw;
+        double frontRightPower   =  drive + strafeLeft + turnCcw;
+        double backLeftPower     =  drive + strafeLeft - turnCcw;
+        double backRightPower    =  drive - strafeLeft + turnCcw;
 
         // Normalize wheel powers to be less than 1.0
         double max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
