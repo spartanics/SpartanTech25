@@ -122,7 +122,6 @@ public class ContinuousShooting extends LinearOpMode {
     private int targetVelocity = 1110;
     final double GOAL_ANGLE = 0.6;
     final double FAR_ANGLE = 1;
-    double angleChange = 0;
     final double BLOCKER_UP = 0;
     final double BLOCKER_DOWN = 1;
 
@@ -231,8 +230,6 @@ public class ContinuousShooting extends LinearOpMode {
 
         leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
-
-
         launchState = LaunchState.IDLE;
         launchControl = LaunchControl.LISTEN;
         wiggleState = WiggleState.WIGGLE_FRONT;
@@ -300,24 +297,6 @@ public class ContinuousShooting extends LinearOpMode {
             if (targetVelocity > 4000)
                 targetVelocity = 4000;
 
-            if (gamepad1.left_bumper){
-                angleChange += 0.01;
-                angle.setPosition(angleChange);
-                if (angleChange > 1){
-                    angleChange = 1;
-                    angle.setPosition(angleChange);
-                }
-            }
-
-            if (gamepad1.right_bumper){
-                angleChange -= 0.01;
-                angle.setPosition(angleChange);
-                if (angleChange <0){
-                    angleChange = 0;
-                    angle.setPosition(angleChange);
-                }
-            }
-
             //left bumper for normal, close to the goal, right bumper when farther away
 
 
@@ -328,8 +307,8 @@ public class ContinuousShooting extends LinearOpMode {
                     rightFeeder.setPower(feederPower);
                     if (gamepad1.y) {
                         blocker.setPosition(BLOCKER_DOWN);
-                        //targetVelocity = TARGET_VELOCITY_GOAL;
-                        //angle.setPosition(GOAL_ANGLE);
+                        targetVelocity = TARGET_VELOCITY_GOAL;
+                        angle.setPosition(GOAL_ANGLE);
                         launch(true);
                         launchControl = LaunchControl.LAUNCHING;
                     } else if (gamepad1.x) {
@@ -430,7 +409,6 @@ public class ContinuousShooting extends LinearOpMode {
             telemetry.addData("wiggle_control", wiggleControl);
             telemetry.addData("Status", "Wiggle_Time: " + wiggleTimer.toString());
             telemetry.addData("V:", "%d" , targetVelocity);
-            telemetry.addData("Angle:", "%f" , angleChange);
             telemetry.update();
         }
     }}
