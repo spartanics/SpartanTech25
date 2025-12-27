@@ -99,6 +99,7 @@ public class ContinuousShooting extends LinearOpMode {
     private final ElapsedTime shotTimer = new ElapsedTime();
     private final ElapsedTime feederTimer = new ElapsedTime();
     private final ElapsedTime driveTimer = new ElapsedTime();
+    private final ElapsedTime correctingHeadingTimer = new ElapsedTime();
     private DcMotorEx launcher;
     private CRServo rightFeeder;
     private CRServo leftFeeder;
@@ -123,13 +124,14 @@ public class ContinuousShooting extends LinearOpMode {
     private WiggleControl wiggleControl;
     private enum LaunchControl {
         LISTEN,
+        CORRECTING_HEADING,
         LAUNCHING,
     }
     private LaunchControl launchControl;
     private LaunchState launchState;
     final double WIGGLE_TIME = 1.0;
-    final double LAUNCHER_TARGET_VELOCITY = 1175;
-    final double LAUNCHER_MIN_VELOCITY = 1160;
+    final int LAUNCHER_TARGET_VELOCITY = 1175;
+    final int LAUNCHER_MIN_VELOCITY = 1160;
     final double FEED_TIME = 0.125; //was 0.20
     final double TIME_BETWEEN_SHOTS = 2;
     private int targetVelocity = 1110;
@@ -138,8 +140,14 @@ public class ContinuousShooting extends LinearOpMode {
     final double BLOCKER_UP = 0;
     final double BLOCKER_DOWN = 1;
 
+
+    final double K_RANGE = 3.06;
+    final double K_PCT = 1080;
+    double pctShoot = 1;
     final int TARGET_VELOCITY_GOAL = 1110;
     final int TARGET_VELOCITY_FAR = 1750;
+
+    int launcherVelocity = 0;
 
     private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
@@ -179,8 +187,8 @@ public class ContinuousShooting extends LinearOpMode {
                 }
                 break;
             case PREPARE:
-                launcher.setVelocity(targetVelocity);
-                if (launcher.getVelocity() > (targetVelocity*0.85)){
+                launcherVelocity = targetVelocity;
+                if (launcher.getVelocity() > (targetVelocity*0.98)){
                     launchState = LaunchState.LAUNCH;
                     leftFeeder.setPower(1);
                     rightFeeder.setPower(1);
@@ -207,7 +215,7 @@ public class ContinuousShooting extends LinearOpMode {
             case WIGGLE_BACK:
                 if (wiggleTimer.seconds() > WIGGLE_TIME) {
                     // Always go back when wiggling
-                    launcher.setVelocity(-LAUNCHER_TARGET_VELOCITY);
+                    launcherVelocity = -LAUNCHER_TARGET_VELOCITY;
                     wiggleState =  WiggleState.WIGGLE_FRONT;
                     wiggleTimer.reset();
                     if (gamepad1.back) {
@@ -217,7 +225,7 @@ public class ContinuousShooting extends LinearOpMode {
                 break;
             case WIGGLE_FRONT:
                 if (wiggleTimer.seconds() > WIGGLE_TIME) {
-                    launcher.setVelocity(-LAUNCHER_TARGET_VELOCITY);
+                    launcherVelocity = -LAUNCHER_TARGET_VELOCITY;
 
                     wiggleState = WiggleState.WIGGLE_BACK;
                     wiggleTimer.reset();
@@ -429,7 +437,7 @@ public class ContinuousShooting extends LinearOpMode {
             double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger);
             if (intakePower > 0){
                 blocker.setPosition(BLOCKER_UP);
-                launcher.setVelocity(-100);
+                launcherVelocity = -100;
             }
 
             double feederPower = 0.0;
@@ -503,7 +511,7 @@ public class ContinuousShooting extends LinearOpMode {
                 case WIGGLING:
                     boolean is_done_wiggling = wiggleMachine();
                     if (is_done_wiggling) {
-                        launcher.setVelocity(0);
+                        launcherVelocity = 0;
                         wiggleControl = WiggleControl.WIGGLE_LISTEN;
                     }
                     break;
@@ -520,20 +528,18 @@ public class ContinuousShooting extends LinearOpMode {
             if (gamepad1.b)
                 blocker.setPosition(BLOCKER_DOWN);
 
-            if (gamepad1.back){
-                launcher.setVelocity(0);
-            }
+
 
             if (gamepad1.dpad_up) {
-                targetVelocity += 1;
+                pctShoot += 0.01;
                 sleep(20);
             }
             if (gamepad1.dpad_down) {
-                targetVelocity -= 1;
+                pctShoot -= 0.01;
                 sleep(20);
             }
-            if (targetVelocity > 4000)
-                targetVelocity = 4000;
+            if (pctShoot > 2)
+                pctShoot = 2;
 
             //left bumper for normal, close to the goal, right bumper when farther away
 
@@ -543,16 +549,34 @@ public class ContinuousShooting extends LinearOpMode {
                 case LISTEN:
                     leftFeeder.setPower(feederPower);
                     rightFeeder.setPower(feederPower);
+                    targetVelocity = LAUNCHER_TARGET_VELOCITY;
+                    if (desiredTag != null){
+                        targetVelocity = (int)(K_RANGE*desiredTag.ftcPose.range+K_PCT*pctShoot);
+                    }
+
+
                     if (gamepad1.y) {
                         blocker.setPosition(BLOCKER_DOWN);
-                        //targetVelocity = TARGET_VELOCITY_GOAL;
                         angle.setPosition(GOAL_ANGLE);
-                        launch(true);
-                        launchControl = LaunchControl.LAUNCHING;
-                    } else if (gamepad1.x) {
-                        blocker.setPosition(BLOCKER_DOWN);
-                        //targetVelocity = TARGET_VELOCITY_FAR;
-                        angle.setPosition(FAR_ANGLE);
+
+                        launchControl = LaunchControl.CORRECTING_HEADING;
+                        correctingHeadingTimer.reset();
+                    }
+                    break;
+                case CORRECTING_HEADING:
+                    intakePower = 0.5;
+                    if (desiredTag != null) {
+                        double bearing = desiredTag.ftcPose.bearing;
+                        yaw = Range.clip(-bearing * 0.02, -MAX_AUTO_TURN, MAX_AUTO_TURN);
+                        if (((bearing < 1) && (bearing > -1))) {
+                            launch(true);
+                            launchControl = LaunchControl.LAUNCHING;
+                        } else {
+                            axial = 0;
+                            lateral = 0;
+                        }
+                    }
+                    if (gamepad1.x || correctingHeadingTimer.seconds() > 0.2){
                         launch(true);
                         launchControl = LaunchControl.LAUNCHING;
                     }
@@ -569,10 +593,16 @@ public class ContinuousShooting extends LinearOpMode {
             }
 
 
+            if (gamepad1.back){
+                launcherVelocity = 0;
+            }
 
             moveRobot(axial, lateral, yaw);
 
             intake.setPower(intakePower);
+
+            launcher.setVelocity(launcherVelocity);
+
 
 
             // Show the elapsed game time and wheel power.
@@ -586,7 +616,7 @@ public class ContinuousShooting extends LinearOpMode {
             telemetry.addData("wiggle_state", wiggleState);
             telemetry.addData("wiggle_control", wiggleControl);
             telemetry.addData("Status", "Wiggle_Time: " + wiggleTimer.toString());
-            telemetry.addData("V:", "%d" , targetVelocity);
+            telemetry.addData("V/pct:", "%d/%.2f" , targetVelocity, pctShoot);
             telemetry.update();
         }
     }}
