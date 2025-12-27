@@ -524,10 +524,14 @@ public class ContinuousShooting extends LinearOpMode {
                 launcher.setVelocity(0);
             }
 
-            if (gamepad1.dpad_up)
-                targetVelocity +=1;
-            if (gamepad1.dpad_down)
-                targetVelocity -=1;
+            if (gamepad1.dpad_up) {
+                targetVelocity += 1;
+                sleep(20);
+            }
+            if (gamepad1.dpad_down) {
+                targetVelocity -= 1;
+                sleep(20);
+            }
             if (targetVelocity > 4000)
                 targetVelocity = 4000;
 
@@ -541,13 +545,13 @@ public class ContinuousShooting extends LinearOpMode {
                     rightFeeder.setPower(feederPower);
                     if (gamepad1.y) {
                         blocker.setPosition(BLOCKER_DOWN);
-                        targetVelocity = TARGET_VELOCITY_GOAL;
+                        //targetVelocity = TARGET_VELOCITY_GOAL;
                         angle.setPosition(GOAL_ANGLE);
                         launch(true);
                         launchControl = LaunchControl.LAUNCHING;
                     } else if (gamepad1.x) {
                         blocker.setPosition(BLOCKER_DOWN);
-                        targetVelocity = TARGET_VELOCITY_FAR;
+                        //targetVelocity = TARGET_VELOCITY_FAR;
                         angle.setPosition(FAR_ANGLE);
                         launch(true);
                         launchControl = LaunchControl.LAUNCHING;
