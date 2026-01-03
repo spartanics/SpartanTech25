@@ -163,12 +163,12 @@ public class FrontAuto12Balls extends OpMode
         WAIT_FOR_LAUNCH,
         DRIVING_AWAY_FROM_GOAL,
         ROTATING,
-        ROTATE2,
+        ROTATE_TO_GOAL,
         DRIVING_OFF_LINE,
-        DRIVING2,
+        DRIVING_RETURN_TO_ZONE,
         LAUNCH2,
         WAIT_FOR_LAUNCH2,
-        DRIVING_AWAY_FROM_GOAL1,
+        DRIVING_TO_GOAL,
         COMPLETE,
         DRIVING_AWAY_FROM_GOAL2,
         ROTATE3,
@@ -439,26 +439,26 @@ public class FrontAuto12Balls extends OpMode
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING2;
+                    autonomousState = AutonomousState.DRIVING_RETURN_TO_ZONE;
                     intake.setPower(2);
 
 
                 }
                 break;
 
-            case DRIVING2:
+            case DRIVING_RETURN_TO_ZONE:
 
                 if (drive(DRIVE_SPEED * 1.25, -52.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.ROTATE2;
+                    autonomousState = AutonomousState.ROTATE_TO_GOAL;
 
                 }
                 break;
 
-            case ROTATE2:
+            case ROTATE_TO_GOAL:
                 if (alliance == Alliance.BLUE) {
                     robotRotationAngle = -40;
                 } else if (alliance == Alliance.RED) {
@@ -469,12 +469,12 @@ public class FrontAuto12Balls extends OpMode
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL1;
+                    autonomousState = AutonomousState.DRIVING_TO_GOAL;
                     blocker.setPosition(BLOCKER_DOWN);
                 }
                 break;
 
-            case DRIVING_AWAY_FROM_GOAL1:
+            case DRIVING_TO_GOAL:
 
                 if (drive(DRIVE_SPEED * 2, 58, DistanceUnit.INCH, 0.9)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
