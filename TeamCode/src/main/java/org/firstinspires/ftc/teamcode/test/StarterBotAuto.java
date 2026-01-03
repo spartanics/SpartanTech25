@@ -30,7 +30,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.test;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
@@ -63,9 +63,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * main robot "loop," continuously checking for conditions that allow us to move to the next step.
  */
 
-@Autonomous(name="StarterBotAuto", group="StarterBot")
+@Autonomous(name="BeginnerTest", group="StarterBot")
 @Disabled
-public class FrontAuto extends OpMode
+public class StarterBotAuto extends OpMode
 {
 
     final double FEED_TIME = 0.20; //The feeder servos run this long when a shot is requested.
@@ -123,7 +123,6 @@ public class FrontAuto extends OpMode
     private DcMotorEx launcher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
-    private DcMotor intake;
 
     /*
      * TECH TIP: State Machines
@@ -190,7 +189,7 @@ public class FrontAuto extends OpMode
          * Later in our code, we will progress through the state machine by moving to other enum members.
          * We do the same for our launcher state machine, setting it to IDLE before we use it later.
          */
-        autonomousState = AutonomousState.LAUNCH;
+        autonomousState = AutonomousState.TEST;
         launchState = LaunchState.IDLE;
 
 
@@ -203,7 +202,6 @@ public class FrontAuto extends OpMode
         leftBackDrive  = hardwareMap.get(DcMotor.class, "left_back_drive");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
         rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
-        intake = hardwareMap.get(DcMotor.class, "intake");
         launcher = hardwareMap.get(DcMotorEx.class,"launcher");
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
@@ -278,7 +276,6 @@ public class FrontAuto extends OpMode
         leftFeeder.setPower(0);
 
 
-
         /*
          * Here we allow the driver to select which alliance we are on using the gamepad.
          */
@@ -298,7 +295,6 @@ public class FrontAuto extends OpMode
      */
     @Override
     public void start() {
-        intake.setPower(.5);
     }
 
     /*
@@ -316,7 +312,7 @@ public class FrontAuto extends OpMode
          * we know our enum isn't reflecting a different state.
          */
         switch (autonomousState){
-            /*case DRIVING_AWAY_FROM_GOAL1:
+            case TEST:
 
 
                 robotRotationAngle = -180;
@@ -331,7 +327,7 @@ public class FrontAuto extends OpMode
                 autonomousState = AutonomousState.COMPLETE;
             }
             break;
-                */
+
 
 
             /*
@@ -380,21 +376,20 @@ public class FrontAuto extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if(drive(DRIVE_SPEED, -6, DistanceUnit.INCH, 1)){
+                if(drive(DRIVE_SPEED, -8, DistanceUnit.INCH, 1)){
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.ROTATING;
-                    intake.setPower(0);
                 }
                 break;
 
             case ROTATING:
                 if(alliance == Alliance.RED){
-                    robotRotationAngle = 45;
-                } else if (alliance == Alliance.BLUE) {
                     robotRotationAngle = -45;
+                } else if (alliance == Alliance.BLUE) {
+                    robotRotationAngle = 45;
                 }
 
                 if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
@@ -408,43 +403,43 @@ public class FrontAuto extends OpMode
 
             case DRIVING_OFF_LINE:
 
-                if(drive(DRIVE_SPEED, -89, DistanceUnit.INCH, 1)) {
+                if(drive(DRIVE_SPEED, -80, DistanceUnit.INCH, 1)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.COMPLETE;
+                    autonomousState = AutonomousState.ROTATING90;
 
                 }
                 break;
 
 
-//            case ROTATING90:
-//                if(alliance == Alliance.RED){
-//                    robotRotationAngle = 90;
-//                } else if (alliance == Alliance.BLUE) {
-//                    robotRotationAngle = -90;
-//                }
-//
-//                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
-//                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL1;
-//                }
-//                break;
-//
-//            case DRIVING_AWAY_FROM_GOAL1:
-//                if(drive(DRIVE_SPEED, 80, DistanceUnit.INCH, 1)) {
-//                    //This makes the robot push the balls into the goal.
-//                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    autonomousState = AutonomousState.COMPLETE;
-//                }
-//                break;
+            case ROTATING90:
+                if(alliance == Alliance.RED){
+                    robotRotationAngle = 90;
+                } else if (alliance == Alliance.BLUE) {
+                    robotRotationAngle = -90;
+                }
+
+                if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL1;
+                }
+                break;
+
+            case DRIVING_AWAY_FROM_GOAL1:
+                if(drive(DRIVE_SPEED, 80, DistanceUnit.INCH, 1)) {
+                    //This makes the robot push the balls into the goal.
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.COMPLETE;
+                }
+                break;
 
         }
 
@@ -456,7 +451,6 @@ public class FrontAuto extends OpMode
          * after the last "case" that runs every loop. This means we can avoid a lot of
          * "copy-and-paste" that non-state machine autonomous routines fall into.
          */
-
         telemetry.addData("AutoState", autonomousState);
         telemetry.addData("LauncherState", launchState);
         telemetry.addData("Motor Current Positions", "leftFront (%d), rightFront (%d)",
