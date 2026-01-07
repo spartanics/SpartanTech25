@@ -530,6 +530,12 @@ public class AprilTagAuto extends OpMode
 
                 if (headingError < 3 && headingError > -3){
                     alignmentState = AlignmentState.IDLE;
+                    moveRobot(0, 0, 0);
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
                     return true;
                 } else {
                     desiredTag = null;
@@ -599,7 +605,7 @@ public class AprilTagAuto extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if (drive(DRIVE_SPEED * 1.25, -64, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1.25, -70, DistanceUnit.INCH, 0.7)) {
 //                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -660,10 +666,10 @@ public class AprilTagAuto extends OpMode
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 45;
+                    robotRotationAngle = 40;
                     blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = -45;
+                    robotRotationAngle = -40;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
@@ -707,9 +713,9 @@ public class AprilTagAuto extends OpMode
 
             case ROTATE_TO_GOAL:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -40;
+                    robotRotationAngle = -35;
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = 40;
+                    robotRotationAngle = 35;
                 }
                 if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
