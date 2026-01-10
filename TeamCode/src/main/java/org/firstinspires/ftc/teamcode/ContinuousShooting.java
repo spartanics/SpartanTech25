@@ -134,6 +134,7 @@ public class ContinuousShooting extends LinearOpMode {
     final int LAUNCHER_MIN_VELOCITY = 1160;
     final double FEED_TIME = 0.125; //was 0.20
     final double TIME_BETWEEN_SHOTS = 2;
+    final double TIME_BETWEEN_SHOTS_BLOCKER_UP = 1;
     private int targetVelocity = 1110;
     final double GOAL_ANGLE = 0.6;
     final double FAR_ANGLE = 1;
@@ -200,6 +201,9 @@ public class ContinuousShooting extends LinearOpMode {
                     leftFeeder.setPower(0);
                     rightFeeder.setPower(0);
 
+                    if(shotTimer.seconds() > TIME_BETWEEN_SHOTS_BLOCKER_UP){
+                        blocker.setPosition(BLOCKER_UP);
+                    }
                     if(shotTimer.seconds() > TIME_BETWEEN_SHOTS){
                         launchState = LaunchState.IDLE;
                         //launcher.setVelocity(0);
