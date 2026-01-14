@@ -129,6 +129,7 @@ public class AprilTagAuto extends OpMode
     private ElapsedTime feederTimer = new ElapsedTime();
     private ElapsedTime driveTimer = new ElapsedTime();
     private ElapsedTime moveOutTimer = new ElapsedTime();
+    private ElapsedTime alignmentTimer = new ElapsedTime();
 
     // Declare OpMode members.
     private DcMotor leftFrontDrive;
@@ -147,7 +148,7 @@ public class AprilTagAuto extends OpMode
     private VisionPortal visionPortal;               // Used to manage the video source.
     private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
     private AprilTagDetection desiredTag = null;     // Used to hold the data for a detected AprilTag
-    final double DESIRED_DISTANCE = 48.0; //  this is how close the camera should get to the target (inches)
+    final double DESIRED_DISTANCE = 55.7; //  this is how close the camera should get to the target (inches)
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
@@ -467,6 +468,7 @@ public class AprilTagAuto extends OpMode
         switch (alignmentState) {
             case IDLE:
                 alignmentState = AlignmentState.FINDING_APRIL_TAG;
+                alignmentTimer.reset();
                 desiredTag = null;
                 break;
 
@@ -496,6 +498,18 @@ public class AprilTagAuto extends OpMode
                 sleep(20);
                 if (targetFound){
                     alignmentState = AlignmentState.ALIGNING;
+                } else {
+                    if (alignmentTimer.seconds() > 2){ //Give up on aligning with april tag after 2 seconds
+                        alignmentState = AlignmentState.IDLE;
+                        moveRobot(0, 0, 0);
+                        leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+                        return true;
+
+                    }
                 }
 
                 break;
@@ -516,7 +530,7 @@ public class AprilTagAuto extends OpMode
                 double lateral;
                 double rangeError = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
                 double headingError = desiredTag.ftcPose.bearing;
-                double yawError = desiredTag.ftcPose.yaw;
+                double yawError = desiredTag.ftcPose.yaw - 10;
 
                 // Use the speed and turn "gains" to calculate how we want the robot to move.
                 axial = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
@@ -526,7 +540,7 @@ public class AprilTagAuto extends OpMode
                 telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", axial, lateral, yaw);
 
 
-        moveRobot(0, lateral, yaw);
+        moveRobot(axial, lateral, yaw);
 
                 if (headingError < 3 && headingError > -3){
                     alignmentState = AlignmentState.IDLE;
@@ -620,7 +634,7 @@ public class AprilTagAuto extends OpMode
 
 
             case ALIGN:
-                if (alignToAprilTag()){
+                if (alignToAprilTag()) {
                     autonomousState = AutonomousState.LAUNCH;
                 }
                 break;
@@ -661,7 +675,6 @@ public class AprilTagAuto extends OpMode
                     }
                 }
                 break;
-
 
 
             case ROTATING:
@@ -735,8 +748,6 @@ public class AprilTagAuto extends OpMode
                 break;
 
 
-
-
             case LAUNCH2:
                 moveOutTimer.reset();
                 launch(true);
@@ -746,7 +757,7 @@ public class AprilTagAuto extends OpMode
                 break;
 
             case WAIT_FOR_LAUNCH2:
-                boolean cond = launch(false) ;
+                boolean cond = launch(false);
                 if (cond) {
                     shotsToFire -= 1;
                     if (shotsToFire > 0) {
@@ -770,24 +781,21 @@ public class AprilTagAuto extends OpMode
 
                 if (alliance == Alliance.BLUE) {
 
-                    if (driveWithDirection(DRIVE_SPEED * 2, -20, -20, DistanceUnit.INCH, 0.7)) {
+                    if (driveWithDirection(DRIVE_SPEED * 2, -20, 0, DistanceUnit.INCH, 0.7)) {
                         autonomousState = AutonomousState.COMPLETE;
                         intake.setPower(0);
                     }
 
 
                 } else if (alliance == Alliance.RED) {
-                        if (driveWithDirection(DRIVE_SPEED * 2, 20, -20, DistanceUnit.INCH, 0.7)) {
-                            autonomousState = AutonomousState.COMPLETE;
-                            intake.setPower(0);
-                        }
+                    if (driveWithDirection(DRIVE_SPEED * 2, 20, 0, DistanceUnit.INCH, 0.7)) {
+                        autonomousState = AutonomousState.COMPLETE;
+                        intake.setPower(0);
                     }
+                }
 
 
-
-
-                    break;
-
+                break;
 
 
         }
@@ -812,6 +820,13 @@ public class AprilTagAuto extends OpMode
                 leftFrontDrive.getTargetPosition(), rightFrontDrive.getTargetPosition());
         telemetry.addData("Motor Target Positions", "leftBack (%d), rightBack (%d)",
                 leftBackDrive.getTargetPosition(), rightBackDrive.getTargetPosition());
+
+        if (desiredTag != null) {
+            telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
+            telemetry.addData("Range", "%5.1f inches", desiredTag.ftcPose.range);
+            telemetry.addData("Bearing", "%3.0f degrees", desiredTag.ftcPose.bearing);
+            telemetry.addData("Yaw", "%3.0f degrees", desiredTag.ftcPose.yaw);
+        }
         telemetry.update();
     }
 

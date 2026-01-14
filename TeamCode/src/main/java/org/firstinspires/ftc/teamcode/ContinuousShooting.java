@@ -130,11 +130,11 @@ public class ContinuousShooting extends LinearOpMode {
     private LaunchControl launchControl;
     private LaunchState launchState;
     final double WIGGLE_TIME = 1.0;
-    final int LAUNCHER_TARGET_VELOCITY = 1175;
+    final int LAUNCHER_TARGET_VELOCITY = 1250;
     final int LAUNCHER_MIN_VELOCITY = 1160;
-    final double FEED_TIME = 0.125; //was 0.20
+    final double FEED_TIME = 0.115; //was 0.20
     final double TIME_BETWEEN_SHOTS = 2;
-    final double TIME_BETWEEN_SHOTS_BLOCKER_UP = 1;
+    final double TIME_BETWEEN_SHOTS_BLOCKER_UP = 0.5;
     private int targetVelocity = 1110;
     final double GOAL_ANGLE = 0.6;
     final double FAR_ANGLE = 1;
@@ -553,9 +553,12 @@ public class ContinuousShooting extends LinearOpMode {
                 case LISTEN:
                     leftFeeder.setPower(feederPower);
                     rightFeeder.setPower(feederPower);
-                    targetVelocity = LAUNCHER_TARGET_VELOCITY;
                     if (desiredTag != null){
                         targetVelocity = (int)(K_RANGE*desiredTag.ftcPose.range+K_PCT*pctShoot);
+                    } else {
+                        if (targetVelocity < LAUNCHER_TARGET_VELOCITY){
+                            targetVelocity = LAUNCHER_TARGET_VELOCITY;
+                        }
                     }
 
 
@@ -571,16 +574,17 @@ public class ContinuousShooting extends LinearOpMode {
                     intakePower = 0.5;
                     if (desiredTag != null) {
                         double bearing = desiredTag.ftcPose.bearing;
+                        double yawError = desiredTag.ftcPose.yaw;
+                        lateral = Range.clip(yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
                         yaw = Range.clip(-bearing * 0.02, -MAX_AUTO_TURN, MAX_AUTO_TURN);
-                        if (((bearing < 1) && (bearing > -1))) {
+                        if (((bearing < 1) && (bearing > -1)) && ((yawError < 1) && (yawError > -1))) {
                             launch(true);
                             launchControl = LaunchControl.LAUNCHING;
                         } else {
                             axial = 0;
-                            lateral = 0;
                         }
                     }
-                    if (gamepad1.x || correctingHeadingTimer.seconds() > 0.2){
+                    if (gamepad1.x || correctingHeadingTimer.seconds() > 0.3){
                         launch(true);
                         launchControl = LaunchControl.LAUNCHING;
                     }
