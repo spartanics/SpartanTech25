@@ -441,7 +441,9 @@ public class ContinuousShooting extends LinearOpMode {
             double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger);
             if (intakePower > 0){
                 blocker.setPosition(BLOCKER_UP);
-                launcherVelocity = -100;
+                if (launchState == LaunchState.IDLE){
+                    launcherVelocity = -100;
+                }
             }
 
             double feederPower = 0.0;
@@ -620,11 +622,10 @@ public class ContinuousShooting extends LinearOpMode {
             telemetry.addData("intake", intakePower);
             telemetry.addData("launch_state", launchState);
             telemetry.addData("launch_control", launchControl);
-            telemetry.addData("launch_velocity","%4.2f", launcher.getVelocity());
             telemetry.addData("wiggle_state", wiggleState);
             telemetry.addData("wiggle_control", wiggleControl);
             telemetry.addData("Status", "Wiggle_Time: " + wiggleTimer.toString());
-            telemetry.addData("V/pct:", "%d/%.2f" , targetVelocity, pctShoot);
+            telemetry.addData("Vc/V/pct:", "%4.2f/%d/%.2f" , launcher.getVelocity(), targetVelocity, pctShoot);
             telemetry.update();
         }
     }}
