@@ -189,7 +189,7 @@ public class ContinuousShooting extends LinearOpMode {
                 break;
             case PREPARE:
                 launcherVelocity = targetVelocity;
-                if (launcher.getVelocity() > (targetVelocity*0.98)){
+                if (launcher.getVelocity() > (targetVelocity*0.80)){
                     launchState = LaunchState.LAUNCH;
                     leftFeeder.setPower(1);
                     rightFeeder.setPower(1);
@@ -556,7 +556,7 @@ public class ContinuousShooting extends LinearOpMode {
                     leftFeeder.setPower(feederPower);
                     rightFeeder.setPower(feederPower);
                     if (desiredTag != null){
-                        targetVelocity = (int)(K_RANGE*desiredTag.ftcPose.range+K_PCT*pctShoot);
+                        targetVelocity = (int)(1.2 * (K_RANGE * desiredTag.ftcPose.range + K_PCT * pctShoot));
                     } else {
                         if (targetVelocity < LAUNCHER_TARGET_VELOCITY){
                             targetVelocity = LAUNCHER_TARGET_VELOCITY;
