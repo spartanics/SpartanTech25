@@ -394,8 +394,41 @@ public class ContinuousShooting extends LinearOpMode {
         blocker = hardwareMap.get(Servo.class, "blocker");
         angle = hardwareMap.get(Servo.class, "angle");
 
-        if (USE_WEBCAM)
-            setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
+        if (USE_WEBCAM) {
+            int ms = 6;
+            int gain = 150;
+            while (!gamepad1.x) {
+                if (gamepad1.dpad_up)
+                    ms += 1;
+                if (gamepad1.dpad_down)
+                    ms -= 1;
+
+                if (ms < 0) {
+                    ms = 0;
+                }
+                if (ms > 10) {
+                    ms = 10;
+                }
+
+                if (gamepad1.dpad_right)
+                    gain += 10;
+                if (gamepad1.dpad_left)
+                    gain -= 10;
+                if (gain < 10)
+                    gain = 10;
+                if (gain > 500)
+                    gain = 500;
+
+
+                setManualExposure(ms, gain);  // Use low exposure time to reduce motion blur
+
+                telemetry.addData("ms/gain:", "%d/%d", ms, gain);
+                telemetry.addLine("Press x to accept ms/gain");
+                telemetry.update();
+                break;
+
+            }
+        }
 
 
         // ########################################################################################
@@ -556,7 +589,7 @@ public class ContinuousShooting extends LinearOpMode {
                     leftFeeder.setPower(feederPower);
                     rightFeeder.setPower(feederPower);
                     if (desiredTag != null){
-                        targetVelocity = (int)(1.2 * (K_RANGE * desiredTag.ftcPose.range + K_PCT * pctShoot));
+                        targetVelocity = (int)(1.1 * (K_RANGE * desiredTag.ftcPose.range + K_PCT * pctShoot));
                     } else {
                         if (targetVelocity < LAUNCHER_TARGET_VELOCITY){
                             targetVelocity = LAUNCHER_TARGET_VELOCITY;

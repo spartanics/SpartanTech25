@@ -88,8 +88,8 @@ public class AprilTagAuto extends OpMode
      * velocity. Here we are setting the target and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1520;//1110
-    final double LAUNCHER_MIN_VELOCITY = 1500;//1090
+    final double LAUNCHER_TARGET_VELOCITY = 1480;//1110
+    final double LAUNCHER_MIN_VELOCITY = 1350;//1090
 
     /*
      * The number of seconds that we wait between each of our 3 shots from the launcher. This
@@ -254,7 +254,7 @@ public class AprilTagAuto extends OpMode
         initAprilTag();
 
         if (USE_WEBCAM)
-            setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
+            setManualExposure(6, 150);  // Use low exposure time to reduce motion blur
 
 
         /*
@@ -619,7 +619,7 @@ public class AprilTagAuto extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if (drive(DRIVE_SPEED * 1.25, -70, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1.25, -45, DistanceUnit.INCH, 0.7)) {
 //                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -700,7 +700,7 @@ public class AprilTagAuto extends OpMode
 
                 launcher.setVelocity(-150);
 
-                if (drive(DRIVE_SPEED * 0.5, 52.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 0.5, 42.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -713,7 +713,7 @@ public class AprilTagAuto extends OpMode
 
             case DRIVING_RETURN_TO_ZONE:
 
-                if (drive(DRIVE_SPEED * 1.25, -52.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1.25, -38.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
