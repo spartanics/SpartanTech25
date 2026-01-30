@@ -34,6 +34,7 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -43,9 +44,20 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 /*
@@ -63,9 +75,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * main robot "loop," continuously checking for conditions that allow us to move to the next step.
  */
 
-@Autonomous(name="FrontAuto12Balls", group="StarterBot")
+@Autonomous(name="AprilTagAuto", group="StarterBot")
 //@Disabled
-public class FrontAuto12Balls extends OpMode
+public class AprilTagAuto extends OpMode
 {
 
     final double FEED_TIME = 0.125; //The feeder servos run this long when a shot is requested.
@@ -76,8 +88,8 @@ public class FrontAuto12Balls extends OpMode
      * velocity. Here we are setting the target and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1110;
-    final double LAUNCHER_MIN_VELOCITY = 1090;
+    final double LAUNCHER_TARGET_VELOCITY = 1480;//1110
+    final double LAUNCHER_MIN_VELOCITY = 1350;//1090
 
     /*
      * The number of seconds that we wait between each of our 3 shots from the launcher. This
@@ -116,6 +128,8 @@ public class FrontAuto12Balls extends OpMode
     private ElapsedTime shotTimer = new ElapsedTime();
     private ElapsedTime feederTimer = new ElapsedTime();
     private ElapsedTime driveTimer = new ElapsedTime();
+    private ElapsedTime moveOutTimer = new ElapsedTime();
+    private ElapsedTime alignmentTimer = new ElapsedTime();
 
     // Declare OpMode members.
     private DcMotor leftFrontDrive;
@@ -128,6 +142,24 @@ public class FrontAuto12Balls extends OpMode
     private DcMotor intake;
     private Servo blocker;
     private Servo angle;
+
+    private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
+    private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
+    private VisionPortal visionPortal;               // Used to manage the video source.
+    private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
+    private AprilTagDetection desiredTag = null;     // Used to hold the data for a detected AprilTag
+    final double DESIRED_DISTANCE = 55.7; //  this is how close the camera should get to the target (inches)
+
+    //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
+    //  applied to the drive motors to correct the error.
+    //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
+    final double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
+    final double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
+    final double TURN_GAIN   =  0.01  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+
+    final double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
+    final double MAX_AUTO_STRAFE= 0.5;   //  Clip the strafing speed to this max value (adjust for your robot)
+    final double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
 
     /*
      * TECH TIP: State Machines
@@ -152,6 +184,7 @@ public class FrontAuto12Balls extends OpMode
      * multiple copies of the same enum which have different names. Here we just have one.
      */
     private LaunchState launchState;
+    private AlignmentState alignmentState;
 
     /*
      * Here is our auto state machine enum. This captures each action we'd like to do in auto.
@@ -159,19 +192,19 @@ public class FrontAuto12Balls extends OpMode
     private enum AutonomousState {
 
         TEST,
+        DRIVING_AWAY_FROM_GOAL,
+        ALIGN,
         LAUNCH,
         WAIT_FOR_LAUNCH,
-        DRIVING_AWAY_FROM_GOAL,
         ROTATING,
-        ROTATE_TO_GOAL,
         DRIVING_OFF_LINE,
         DRIVING_RETURN_TO_ZONE,
+        ROTATE_TO_GOAL,
+        ALIGN2,
         LAUNCH2,
         WAIT_FOR_LAUNCH2,
-        DRIVING_TO_GOAL,
-        COMPLETE,
-        DRIVING_AWAY_FROM_GOAL2,
-        ROTATE3,
+        EXIT_FROM_ZONE,
+        COMPLETE
     }
 
     private AutonomousState autonomousState;
@@ -184,10 +217,25 @@ public class FrontAuto12Balls extends OpMode
         BLUE;
     }
 
+    private enum AlignmentState{
+        IDLE,
+        FINDING_APRIL_TAG,
+        ALIGNING;
+    }
+
     /*
      * When we create the instance of our enum we can also assign a default state.
      */
     private Alliance alliance = Alliance.RED;
+
+    public final void sleep(long milliseconds) {
+        try {
+            Thread.sleep(milliseconds);
+        } catch (InterruptedException var4) {
+            Thread.currentThread().interrupt();
+        }
+
+    }
 
     /*
      * This code runs ONCE when the driver hits INIT.
@@ -199,8 +247,14 @@ public class FrontAuto12Balls extends OpMode
          * Later in our code, we will progress through the state machine by moving to other enum members.
          * We do the same for our launcher state machine, setting it to IDLE before we use it later.
          */
-        autonomousState = AutonomousState.LAUNCH;
+        boolean targetFound     = false;    // Set to true when an AprilTag target is detected
+        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
         launchState = LaunchState.IDLE;
+        alignmentState = AlignmentState.IDLE;
+        initAprilTag();
+
+        if (USE_WEBCAM)
+            setManualExposure(6, 150);  // Use low exposure time to reduce motion blur
 
 
         /*
@@ -276,7 +330,235 @@ public class FrontAuto12Balls extends OpMode
 
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
+
     }
+    public void moveRobot(double axial, double lateral, double yaw) {
+
+        leftFrontDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftBackDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFrontDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightBackDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        // Combine the joystick requests for each axis-motion to determine each wheel's power.
+        // Set up a variable for each drive wheel to save the power level for telemetry.
+
+        double leftFrontPower  = axial + lateral + yaw;
+        double rightFrontPower = axial - lateral - yaw;
+        double leftBackPower   = axial - lateral + yaw;
+        double rightBackPower  = axial + lateral - yaw;
+
+        // Normalize the values so no wheel power exceeds 100%
+        // This ensures that the robot maintains the desired motion.
+        double max = Math.max(Math.abs(leftFrontPower), Math.abs(rightFrontPower));
+        max = Math.max(max, Math.abs(leftBackPower));
+        max = Math.max(max, Math.abs(rightBackPower));
+
+        if (max > 1.0) {
+            leftFrontPower  /= max;
+            rightFrontPower /= max;
+            leftBackPower   /= max;
+            rightBackPower  /= max;
+        }
+
+            /*if (gamepad1.start) {
+                runtime.reset();
+                state = 1;
+            }
+
+            if (state == 1) {
+                if (runtime.seconds() < 2) {
+                    leftFrontPower = 0.2;
+                    leftBackPower = 0.2;
+                    rightFrontPower = 0.2;
+                    rightBackPower = 0.2;
+                } else {
+                    leftFrontPower = 0.0;
+                    leftBackPower = 0.0;
+                    rightFrontPower = 0.0;
+                    rightBackPower = 0.0;
+                    state = 0;
+                }
+            }*/
+
+
+        // This is test code:
+        //
+        // Uncomment the following code to test your motor directions.
+        // Each button should make the corresponding motor run FORWARD.
+        //   1) First get all the motors to take to correct positions on the robot
+        //      by adjusting your Robot Configuration if necessary.
+        //   2) Then make sure they run in the correct direction by modifying the
+        //      the setDirection() calls above.
+        // Once the correct motors move in the correct direction re-comment this code.
+
+
+        //leftFrontPower  = gamepad1.x ? 1.0 : 0.0;  // X gamepad
+        //leftBackPower   = gamepad1.a ? 1.0 : 0.0;  // A gamepad
+        //rightFrontPower = gamepad1.y ? 1.0 : 0.0;  // Y gamepad
+        //rightBackPower  = gamepad1.b ? 1.0 : 0.0;  // B gamepadhttps://research.google.com/colaboratory/faq.html
+
+
+        // Send calculated power to wheels
+        leftFrontDrive.setPower(leftFrontPower);
+        rightFrontDrive.setPower(rightFrontPower);
+        leftBackDrive.setPower(leftBackPower);
+        rightBackDrive.setPower(rightBackPower);
+    }
+    private void initAprilTag() {
+        // Create the AprilTag processor by using a builder.
+        aprilTag = new AprilTagProcessor.Builder().build();
+
+        // Adjust Image Decimation to trade-off detection-range for detection-rate.
+        // e.g. Some typical detection data using a Logitech C920 WebCam
+        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
+        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
+        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second
+        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second
+        // Note: Decimation can be changed on-the-fly to adapt during a match.
+        aprilTag.setDecimation(3);
+
+        // Create the vision portal by using a builder.
+        if (USE_WEBCAM) {
+            visionPortal = new VisionPortal.Builder()
+                    .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                    .addProcessor(aprilTag)
+                    .build();
+        } else {
+            visionPortal = new VisionPortal.Builder()
+                    .setCamera(BuiltinCameraDirection.BACK)
+                    .addProcessor(aprilTag)
+                    .build();
+        }
+    }
+
+    private void    setManualExposure(int exposureMS, int gain) {
+        // Wait for the camera to be open, then use the controls
+
+        if (visionPortal == null) {
+            return;
+        }
+
+        // Make sure camera is streaming before we try to set the exposure controls
+        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
+            telemetry.addData("Camera", "Waiting");
+            telemetry.update();
+            while ((visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
+                sleep(20);
+            }
+            telemetry.addData("Camera", "Ready");
+            telemetry.update();
+        }
+
+        // Set camera controls unless we are stopping.
+        if (true)
+        {
+            ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
+            if (exposureControl.getMode() != ExposureControl.Mode.Manual) {
+                exposureControl.setMode(ExposureControl.Mode.Manual);
+                sleep(50);
+            }
+            exposureControl.setExposure((long)exposureMS, TimeUnit.MILLISECONDS);
+            sleep(20);
+            GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
+            gainControl.setGain(gain);
+            sleep(20);
+        }
+    }
+
+    private boolean alignToAprilTag() {
+        switch (alignmentState) {
+            case IDLE:
+                alignmentState = AlignmentState.FINDING_APRIL_TAG;
+                alignmentTimer.reset();
+                desiredTag = null;
+                break;
+
+            case FINDING_APRIL_TAG:
+                boolean targetFound = false;
+
+                // Step through the list of detected tags and look for a matching tag
+                List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+                for (AprilTagDetection detection : currentDetections) {
+                    // Look to see if we have size info on this tag.
+                    if (detection.metadata != null) {
+                        //  Check to see if we want to track towards this tag.
+                        if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
+                            // Yes, we want to use this tag.
+                            targetFound = true;
+                            desiredTag = detection;
+                            break;  // don't look any further.
+                        } else {
+                            // This tag is in the library, but we do not want to track it right now.
+                            telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
+                        }
+                    } else {
+                        // This tag is NOT in the library, so we don't have enough information to track to it.
+                        telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
+                    }
+                }
+                sleep(20);
+                if (targetFound){
+                    alignmentState = AlignmentState.ALIGNING;
+                } else {
+                    if (alignmentTimer.seconds() > 2){ //Give up on aligning with april tag after 2 seconds
+                        alignmentState = AlignmentState.IDLE;
+                        moveRobot(0, 0, 0);
+                        leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+                        return true;
+
+                    }
+                }
+
+                break;
+            case ALIGNING:
+
+
+
+                // Tell the driver what we see, and what to do.
+
+                    telemetry.addData("\n>","HOLD Left-Bumper to Drive to Target\n");
+                    telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
+                    telemetry.addData("Range",  "%5.1f inches", desiredTag.ftcPose.range);
+                    telemetry.addData("Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
+                    telemetry.addData("Yaw","%3.0f degrees", desiredTag.ftcPose.yaw);
+
+                double axial;
+                double yaw;
+                double lateral;
+                double rangeError = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
+                double headingError = desiredTag.ftcPose.bearing;
+                double yawError = desiredTag.ftcPose.yaw - 10;
+
+                // Use the speed and turn "gains" to calculate how we want the robot to move.
+                axial = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+                yaw = Range.clip(-headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
+                lateral = Range.clip(yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
+
+                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", axial, lateral, yaw);
+
+
+        moveRobot(axial, lateral, yaw);
+
+                if (headingError < 3 && headingError > -3){
+                    alignmentState = AlignmentState.IDLE;
+                    moveRobot(0, 0, 0);
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+                    return true;
+                } else {
+                    desiredTag = null;
+                    alignmentState = AlignmentState.FINDING_APRIL_TAG;
+                }
+        }
+        return false;
+    }
+
 
     /*
      * This code runs REPEATEDLY after the driver hits INIT, but before they hit START.
@@ -329,38 +611,42 @@ public class FrontAuto12Balls extends OpMode
          * we know our enum isn't reflecting a different state.
          */
         switch (autonomousState) {
-            /*case DRIVING_AWAY_FROM_GOAL1:
 
 
-                robotRotationAngle = -180;
+            case DRIVING_AWAY_FROM_GOAL:
+                /*
+                 * This is another function that returns a boolean. This time we return "true" if
+                 * the robot has been within a tolerance of the target position for "holdSeconds."
+                 * Once the function returns "true" we reset the encoders again and move on.
+                 */
+                if (drive(DRIVE_SPEED * 1.25, -45, DistanceUnit.INCH, 0.7)) {
+//                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+//                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+//                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+//                    leftBackDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.ALIGN;
+                }
+                break;
 
 
-
-            if(rotate(ROTATE_SPEED, robotRotationAngle, AngleUnit.DEGREES,1)){
-                leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                autonomousState = AutonomousState.COMPLETE;
-            }
-            break;
-                */
+            case ALIGN:
+                if (alignToAprilTag()) {
+                    autonomousState = AutonomousState.LAUNCH;
+                }
+                break;
 
 
-            /*
-             * Since the first state of our auto is LAUNCH, this is the first "case" we encounter.
-             * This case is very simple. We call our .launch() function with "true" in the parameter.
-             * This "true" value informs our launch function that we'd like to start the process of
-             * firing a shot. We will call this function with a "false" in the next case. This
-             * "false" condition means that we are continuing to call the function every loop,
-             * allowing it to cycle through and continue the process of launching the first ball.
-             */
             case LAUNCH:
-
                 angle.setPosition(GOAL_ANGLE);
-
+                moveOutTimer.reset();
                 launch(true);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
+                intake.setPower(1);
+                blocker.setPosition(BLOCKER_DOWN);
                 break;
 
             case WAIT_FOR_LAUNCH:
@@ -375,7 +661,7 @@ public class FrontAuto12Balls extends OpMode
                  * state on our state machine. Otherwise, we reset the encoders on our drive motors
                  * and move onto the next state.
                  */
-                if (launch(false)) {
+                if (launch(false) || moveOutTimer.seconds() > 2) {
                     shotsToFire -= 1;
                     if (shotsToFire > 0) {
                         autonomousState = AutonomousState.LAUNCH;
@@ -385,38 +671,18 @@ public class FrontAuto12Balls extends OpMode
                         rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         launcher.setVelocity(0);
-                        intake.setPower(0.6);
-                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
+                        autonomousState = AutonomousState.ROTATING;
                     }
                 }
                 break;
 
-            case DRIVING_AWAY_FROM_GOAL:
-                /*
-                 * This is another function that returns a boolean. This time we return "true" if
-                 * the robot has been within a tolerance of the target position for "holdSeconds."
-                 * Once the function returns "true" we reset the encoders again and move on.
-                 */
-                if (drive(DRIVE_SPEED * 1.25, -59, DistanceUnit.INCH, 0.7)) {
-//                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
-//                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
-//                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
-//                    leftBackDrive.setDirection(DcMotorSimple.Direction.FORWARD);
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.ROTATING;
-                    intake.setPower(0);
-                }
-                break;
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 45;
+                    robotRotationAngle = 40;
                     blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = -45;
+                    robotRotationAngle = -40;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
@@ -432,15 +698,14 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING_OFF_LINE:
 
-                launcher.setVelocity(-100);
+                launcher.setVelocity(-150);
 
-                if (drive(DRIVE_SPEED * 0.5, 52.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 0.5, 42.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     autonomousState = AutonomousState.DRIVING_RETURN_TO_ZONE;
-                    intake.setPower(2);
 
 
                 }
@@ -448,7 +713,7 @@ public class FrontAuto12Balls extends OpMode
 
             case DRIVING_RETURN_TO_ZONE:
 
-                if (drive(DRIVE_SPEED * 1.25, -52.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1.25, -38.5, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -458,44 +723,42 @@ public class FrontAuto12Balls extends OpMode
                 }
                 break;
 
+
             case ROTATE_TO_GOAL:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -40;
+                    robotRotationAngle = -35;
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = 40;
+                    robotRotationAngle = 35;
                 }
                 if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING_TO_GOAL;
+                    autonomousState = AutonomousState.ALIGN2;
                     blocker.setPosition(BLOCKER_DOWN);
                 }
                 break;
 
-            case DRIVING_TO_GOAL:
-
-                if (drive(DRIVE_SPEED * 2, 58, DistanceUnit.INCH, 0.9)) {
-                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            case ALIGN2:
+                shotsToFire = 3;
+                if (alignToAprilTag()) {
                     autonomousState = AutonomousState.LAUNCH2;
-                    intake.setPower(0);
-                    shotsToFire = 3;
                 }
                 break;
 
 
             case LAUNCH2:
+                moveOutTimer.reset();
                 launch(true);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH2;
                 intake.setPower(1);
+                blocker.setPosition(BLOCKER_DOWN);
                 break;
 
             case WAIT_FOR_LAUNCH2:
-                if (launch(false)) {
+                boolean cond = launch(false);
+                if (cond) {
                     shotsToFire -= 1;
                     if (shotsToFire > 0) {
                         autonomousState = AutonomousState.LAUNCH2;
@@ -505,32 +768,36 @@ public class FrontAuto12Balls extends OpMode
                         rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                         launcher.setVelocity(0);
-                        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL2;
+                        autonomousState = AutonomousState.EXIT_FROM_ZONE;
                     }
+                }
+
+                if (moveOutTimer.seconds() > 4) {
+                    autonomousState = AutonomousState.EXIT_FROM_ZONE;
                 }
                 break;
 
-            case DRIVING_AWAY_FROM_GOAL2:
+            case EXIT_FROM_ZONE:
 
                 if (alliance == Alliance.BLUE) {
 
-                    if (driveWithDirection(DRIVE_SPEED * 2, -20, -20, DistanceUnit.INCH, 0.7)) {
+                    if (driveWithDirection(DRIVE_SPEED * 2, -20, 0, DistanceUnit.INCH, 0.7)) {
                         autonomousState = AutonomousState.COMPLETE;
                         intake.setPower(0);
-                    }else if(alliance == Alliance.RED) {
-                        if (driveWithDirection(DRIVE_SPEED * 2, 20, -20, DistanceUnit.INCH, 0.7)) {
-                            autonomousState = AutonomousState.COMPLETE;
-                            intake.setPower(0);
-                        }
                     }
 
 
-
-
-                    break;
-
-
+                } else if (alliance == Alliance.RED) {
+                    if (driveWithDirection(DRIVE_SPEED * 2, 20, 0, DistanceUnit.INCH, 0.7)) {
+                        autonomousState = AutonomousState.COMPLETE;
+                        intake.setPower(0);
+                    }
                 }
+
+
+                break;
+
+
         }
 
         /*
@@ -543,6 +810,7 @@ public class FrontAuto12Balls extends OpMode
          */
 
         telemetry.addData("AutoState", autonomousState);
+        telemetry.addData("AlignmentState", alignmentState);
         telemetry.addData("LauncherState", launchState);
         telemetry.addData("Motor Current Positions", "leftFront (%d), rightFront (%d)",
                 leftFrontDrive.getCurrentPosition(), rightFrontDrive.getCurrentPosition());
@@ -552,6 +820,13 @@ public class FrontAuto12Balls extends OpMode
                 leftFrontDrive.getTargetPosition(), rightFrontDrive.getTargetPosition());
         telemetry.addData("Motor Target Positions", "leftBack (%d), rightBack (%d)",
                 leftBackDrive.getTargetPosition(), rightBackDrive.getTargetPosition());
+
+        if (desiredTag != null) {
+            telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
+            telemetry.addData("Range", "%5.1f inches", desiredTag.ftcPose.range);
+            telemetry.addData("Bearing", "%3.0f degrees", desiredTag.ftcPose.bearing);
+            telemetry.addData("Yaw", "%3.0f degrees", desiredTag.ftcPose.yaw);
+        }
         telemetry.update();
     }
 

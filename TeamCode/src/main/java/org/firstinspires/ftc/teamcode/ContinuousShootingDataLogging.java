@@ -29,6 +29,8 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.bosch.BHI260IMU;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -36,6 +38,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -43,13 +46,13 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDir
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 
 /*
  * This file contains an example of a Linear "OpMode".
@@ -79,9 +82,15 @@ import java.util.concurrent.TimeUnit;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@TeleOp(name="ContinuousShooting", group="Linear OpMode")
-//@Disabled
-public class ContinuousShooting extends LinearOpMode {
+@TeleOp(name="DataLogging", group="Linear OpMode")
+@Disabled
+public class ContinuousShootingDataLogging extends LinearOpMode {
+
+    Datalog datalog;
+
+    private BHI260IMU imu;
+    private VoltageSensor battery;
+
 
     // Declare OpMode members for each of the 4 motors.
     private ElapsedTime runtime = new ElapsedTime();
@@ -374,6 +383,25 @@ public class ContinuousShooting extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+        // Get devices from the hardwareMap.
+        // If needed, change "Control Hub" to (e.g.) "Expansion Hub 1".
+        battery = hardwareMap.voltageSensor.get("Control Hub");
+        imu = hardwareMap.get(BHI260IMU.class, "imu");
+
+        // Initialize the datalog
+        datalog = new Datalog("datalog_01");
+        // You do not need to fill every field of the datalog
+        // every time you call writeLine(); those fields will simply
+        // contain the last value.
+        datalog.opModeStatus.set("INIT");
+        datalog.battery.set(battery.getVoltage());
+        datalog.writeLine();
+
+//        BHI260IMU.Parameters parameters = new BHI260IMU.Parameters();
+//        parameters.angleUnit = BHI260IMU.AngleUnit.DEGREES;
+//        imu.initialize(parameters);
+
+
 
         boolean targetFound     = false;    // Set to true when an AprilTag target is detected
 
@@ -458,6 +486,10 @@ public class ContinuousShooting extends LinearOpMode {
         telemetry.update();
 
         waitForStart();
+
+        datalog.opModeStatus.set("RUNNING");
+
+
         runtime.reset();
         wiggleTimer.reset();
 
@@ -468,7 +500,22 @@ public class ContinuousShooting extends LinearOpMode {
 
 
         // run until the end of the match (driver presses STOP)
+        int i = 0;
         while (opModeIsActive()) {
+            i++;
+
+            datalog.loopCounter.set(i);
+            datalog.battery.set(battery.getVoltage());
+
+//            Orientation orientation = imu.getRobotOrientation();
+
+            datalog.yaw.set(launcher.getVelocity());
+            datalog.pitch.set(0);
+            datalog.roll.set(0);
+
+            // The logged timestamp is taken when writeLine() is called.
+            datalog.writeLine();
+
             double max;
 
             double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger);
@@ -661,4 +708,55 @@ public class ContinuousShooting extends LinearOpMode {
             telemetry.addData("Vc/V/pct:", "%4.2f/%d/%.2f" , launcher.getVelocity(), targetVelocity, pctShoot);
             telemetry.update();
         }
-    }}
+    }
+    /*
+     * This class encapsulates all the fields that will go into the datalog.
+     */
+    public static class Datalog
+    {
+        // The underlying datalogger object - it cares only about an array of loggable fields
+        private final Datalogger datalogger;
+
+        // These are all of the fields that we want in the datalog.
+        // Note that order here is NOT important. The order is important in the setFields() call below
+        public Datalogger.GenericField opModeStatus = new Datalogger.GenericField("OpModeStatus");
+        public Datalogger.GenericField loopCounter  = new Datalogger.GenericField("Loop Counter");
+        public Datalogger.GenericField yaw          = new Datalogger.GenericField("Yaw");
+        public Datalogger.GenericField pitch        = new Datalogger.GenericField("Pitch");
+        public Datalogger.GenericField roll         = new Datalogger.GenericField("Roll");
+        public Datalogger.GenericField battery      = new Datalogger.GenericField("Battery");
+
+        public Datalog(String name)
+        {
+            // Build the underlying datalog object
+            datalogger = new Datalogger.Builder()
+
+                    // Pass through the filename
+                    .setFilename(name)
+
+                    // Request an automatic timestamp field
+                    .setAutoTimestamp(Datalogger.AutoTimestamp.DECIMAL_SECONDS)
+
+                    // Tell it about the fields we care to log.
+                    // Note that order *IS* important here! The order in which we list
+                    // the fields is the order in which they will appear in the log.
+                    .setFields(
+                            opModeStatus,
+                            loopCounter,
+                            yaw,
+                            pitch,
+                            roll,
+                            battery
+                    )
+                    .build();
+        }
+
+        // Tell the datalogger to gather the values of the fields
+        // and write a new line in the log.
+        public void writeLine()
+        {
+            datalogger.writeLine();
+        }
+    }
+
+}
