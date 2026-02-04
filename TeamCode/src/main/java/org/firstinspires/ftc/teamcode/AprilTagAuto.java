@@ -679,10 +679,10 @@ public class AprilTagAuto extends OpMode
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 40;
+                    robotRotationAngle = 50;
                     blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = -40;
+                    robotRotationAngle = -50;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
@@ -726,9 +726,9 @@ public class AprilTagAuto extends OpMode
 
             case ROTATE_TO_GOAL:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -35;
+                    robotRotationAngle = -45;
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = 35;
+                    robotRotationAngle = 45;
                 }
                 if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
