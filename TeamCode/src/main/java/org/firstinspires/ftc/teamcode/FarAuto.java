@@ -681,10 +681,10 @@ public class FarAuto extends OpMode
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 30;
+                    robotRotationAngle = 75;
                     blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = -30;
+                    robotRotationAngle = -75;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
