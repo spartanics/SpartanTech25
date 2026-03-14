@@ -34,7 +34,6 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
-
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -75,9 +74,9 @@ import java.util.concurrent.TimeUnit;
  * main robot "loop," continuously checking for conditions that allow us to move to the next step.
  */
 
-@Autonomous(name="AprilTagAuto", group="StarterBot")
+@Autonomous(name="FarAuto", group="StarterBot")
 //@Disabled
-public class AprilTagAuto extends OpMode
+public class FarAuto extends OpMode
 {
 
     final double FEED_TIME = 0.125; //The feeder servos run this long when a shot is requested.
@@ -88,8 +87,8 @@ public class AprilTagAuto extends OpMode
      * velocity. Here we are setting the target and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1480;//1110
-    final double LAUNCHER_MIN_VELOCITY = 1350;//1090
+    final double LAUNCHER_TARGET_VELOCITY = 1750; //1760
+    final double LAUNCHER_MIN_VELOCITY = LAUNCHER_TARGET_VELOCITY * 0.70;//1090
 
     /*
      * The number of seconds that we wait between each of our 3 shots from the launcher. This
@@ -248,7 +247,7 @@ public class AprilTagAuto extends OpMode
          * We do the same for our launcher state machine, setting it to IDLE before we use it later.
          */
         boolean targetFound     = false;    // Set to true when an AprilTag target is detected
-        autonomousState = AutonomousState.DRIVING_AWAY_FROM_GOAL;
+        autonomousState = AutonomousState.ALIGN;
         launchState = LaunchState.IDLE;
         alignmentState = AlignmentState.IDLE;
         initAprilTag();
@@ -530,7 +529,10 @@ public class AprilTagAuto extends OpMode
                 double lateral;
                 double rangeError = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
                 double headingError = desiredTag.ftcPose.bearing;
-                double yawError = desiredTag.ftcPose.yaw - 10;
+                double yawError = desiredTag.ftcPose.yaw - 0;
+
+                rangeError = 0; // We do not want to get out of the small triangle
+
 
                 // Use the speed and turn "gains" to calculate how we want the robot to move.
                 axial = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
@@ -679,10 +681,10 @@ public class AprilTagAuto extends OpMode
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 50;
+                    robotRotationAngle = 75;
                     blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = -50;
+                    robotRotationAngle = -75;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
@@ -700,12 +702,12 @@ public class AprilTagAuto extends OpMode
 
                 launcher.setVelocity(-150);
 
-                if (drive(DRIVE_SPEED * 0.5, 42.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 0.5, 26, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.DRIVING_RETURN_TO_ZONE;
+                    autonomousState = AutonomousState.COMPLETE;
 
 
                 }
