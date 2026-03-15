@@ -87,7 +87,7 @@ public class FarAuto extends OpMode
      * velocity. Here we are setting the target and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1750; //1760
+    final double LAUNCHER_TARGET_VELOCITY = 1750 * 1.05; //1760
     final double LAUNCHER_MIN_VELOCITY = LAUNCHER_TARGET_VELOCITY * 0.70;//1090
 
     /*
@@ -203,7 +203,7 @@ public class FarAuto extends OpMode
         LAUNCH2,
         WAIT_FOR_LAUNCH2,
         EXIT_FROM_ZONE,
-        COMPLETE
+        GO_BACK_A_LITTLE, COMPLETE
     }
 
     private AutonomousState autonomousState;
@@ -621,7 +621,7 @@ public class FarAuto extends OpMode
                  * the robot has been within a tolerance of the target position for "holdSeconds."
                  * Once the function returns "true" we reset the encoders again and move on.
                  */
-                if (drive(DRIVE_SPEED * 1.25, -45, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 2, -45, DistanceUnit.INCH, 0.7)) {
 //                    rightFrontDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    rightBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 //                    leftFrontDrive.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -643,7 +643,7 @@ public class FarAuto extends OpMode
 
 
             case LAUNCH:
-                angle.setPosition(GOAL_ANGLE);
+                angle.setPosition(GOAL_ANGLE); //Not used anymore
                 moveOutTimer.reset();
                 launch(true);
                 autonomousState = AutonomousState.WAIT_FOR_LAUNCH;
@@ -663,7 +663,7 @@ public class FarAuto extends OpMode
                  * state on our state machine. Otherwise, we reset the encoders on our drive motors
                  * and move onto the next state.
                  */
-                if (launch(false) || moveOutTimer.seconds() > 2) {
+                if (launch(false)) {
                     shotsToFire -= 1;
                     if (shotsToFire > 0) {
                         autonomousState = AutonomousState.LAUNCH;
@@ -702,12 +702,12 @@ public class FarAuto extends OpMode
 
                 launcher.setVelocity(-150);
 
-                if (drive(DRIVE_SPEED * 0.5, 26, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 1, 60, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.COMPLETE;
+                    autonomousState = AutonomousState.DRIVING_RETURN_TO_ZONE;
 
 
                 }
@@ -715,7 +715,7 @@ public class FarAuto extends OpMode
 
             case DRIVING_RETURN_TO_ZONE:
 
-                if (drive(DRIVE_SPEED * 1.25, -38.5, DistanceUnit.INCH, 0.7)) {
+                if (drive(DRIVE_SPEED * 2, -50, DistanceUnit.INCH, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -728,17 +728,28 @@ public class FarAuto extends OpMode
 
             case ROTATE_TO_GOAL:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -45;
+                    robotRotationAngle = -75;
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = 45;
+                    robotRotationAngle = 75;
                 }
                 if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    autonomousState = AutonomousState.ALIGN2;
+                    autonomousState = AutonomousState.GO_BACK_A_LITTLE;
                     blocker.setPosition(BLOCKER_DOWN);
+                }
+                break;
+
+            case GO_BACK_A_LITTLE:
+                if (drive(DRIVE_SPEED * 2, -12, DistanceUnit.INCH, 0.7)) {
+                    leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    leftBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    rightBackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    autonomousState = AutonomousState.ALIGN2;
+
                 }
                 break;
 
@@ -783,14 +794,14 @@ public class FarAuto extends OpMode
 
                 if (alliance == Alliance.BLUE) {
 
-                    if (driveWithDirection(DRIVE_SPEED * 2, -20, 0, DistanceUnit.INCH, 0.7)) {
+                    if (driveWithDirection(DRIVE_SPEED * 2, 0, 20, DistanceUnit.INCH, 0.7)) {
                         autonomousState = AutonomousState.COMPLETE;
                         intake.setPower(0);
                     }
 
 
                 } else if (alliance == Alliance.RED) {
-                    if (driveWithDirection(DRIVE_SPEED * 2, 20, 0, DistanceUnit.INCH, 0.7)) {
+                    if (driveWithDirection(DRIVE_SPEED * 2, 0, 20, DistanceUnit.INCH, 0.7)) {
                         autonomousState = AutonomousState.COMPLETE;
                         intake.setPower(0);
                     }
@@ -813,7 +824,7 @@ public class FarAuto extends OpMode
 
         telemetry.addData("AutoState", autonomousState);
         telemetry.addData("AlignmentState", alignmentState);
-        telemetry.addData("LauncherState", launchState);
+        telemetry.addData("LauncherState", "%s %d", launchState, shotsToFire);
         telemetry.addData("Motor Current Positions", "leftFront (%d), rightFront (%d)",
                 leftFrontDrive.getCurrentPosition(), rightFrontDrive.getCurrentPosition());
         telemetry.addData("Motor Current Positions", "leftBack (%d), rightBack (%d)",
@@ -848,24 +859,34 @@ public class FarAuto extends OpMode
      * @return "true" for one cycle after a ball has been successfully launched, "false" otherwise.
      */
     boolean launch(boolean shotRequested){
+        // force the launchState to IDLE when shotRequested is True
+        if (shotRequested)
+            launchState = LaunchState.IDLE;
+
         switch (launchState) {
             case IDLE:
                 if (shotRequested) {
                     launchState = LaunchState.PREPARE;
                     shotTimer.reset();
+                    blocker.setPosition(BLOCKER_DOWN);
                 }
                 break;
+
             case PREPARE:
                 launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY){
+                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY && shotTimer.seconds() > 0.25){
                     launchState = LaunchState.LAUNCH;
                     leftFeeder.setPower(1);
                     rightFeeder.setPower(1);
                     feederTimer.reset();
+                    shotTimer.reset();
+
                 }
                 break;
+
             case LAUNCH:
                 if (feederTimer.seconds() > FEED_TIME) {
+                    blocker.setPosition(BLOCKER_UP);
                     leftFeeder.setPower(0);
                     rightFeeder.setPower(0);
 
@@ -874,6 +895,8 @@ public class FarAuto extends OpMode
                         return true;
                     }
                 }
+                break;
+
         }
         return false;
     }
