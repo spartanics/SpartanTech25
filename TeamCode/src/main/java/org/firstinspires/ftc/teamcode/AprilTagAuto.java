@@ -88,7 +88,7 @@ public class AprilTagAuto extends OpMode
      * velocity. Here we are setting the target and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1480;//1110
+    final double LAUNCHER_TARGET_VELOCITY = 1510;//1110
     final double LAUNCHER_MIN_VELOCITY = 1350;//1090
 
     /*
@@ -679,10 +679,10 @@ public class AprilTagAuto extends OpMode
 
             case ROTATING:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = 50;
+                    robotRotationAngle = 53;
                     blocker.setPosition(BLOCKER_UP);
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = -50;
+                    robotRotationAngle = -53;
                     blocker.setPosition(BLOCKER_UP);
                 }
 
@@ -726,9 +726,9 @@ public class AprilTagAuto extends OpMode
 
             case ROTATE_TO_GOAL:
                 if (alliance == Alliance.BLUE) {
-                    robotRotationAngle = -45;
+                    robotRotationAngle = -47;
                 } else if (alliance == Alliance.RED) {
-                    robotRotationAngle = 45;
+                    robotRotationAngle = 47;
                 }
                 if (rotate(ROTATE_SPEED * 1.25, robotRotationAngle, AngleUnit.DEGREES, 0.7)) {
                     leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
