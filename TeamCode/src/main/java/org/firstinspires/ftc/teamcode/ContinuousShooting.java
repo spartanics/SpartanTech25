@@ -83,6 +83,7 @@ import java.util.concurrent.TimeUnit;
 //@Disabled
 public class ContinuousShooting extends LinearOpMode {
 
+    private LaunchPackage launchPackage = null;
     // Declare OpMode members for each of the 4 motors.
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor leftFrontDrive = null;
@@ -93,24 +94,13 @@ public class ContinuousShooting extends LinearOpMode {
     private Servo clawServo = null;
 
     private int state = 0; // 0: stop_walking 1: start_walking
-    private DcMotor intake = null;
 
     private final ElapsedTime wiggleTimer = new ElapsedTime();
-    private final ElapsedTime shotTimer = new ElapsedTime();
-    private final ElapsedTime feederTimer = new ElapsedTime();
+
     private final ElapsedTime driveTimer = new ElapsedTime();
-    private final ElapsedTime correctingHeadingTimer = new ElapsedTime();
-    private DcMotorEx launcher;
-    private CRServo rightFeeder;
-    private CRServo leftFeeder;
-    private Servo blocker;
     private Servo angle;
 
-    private enum LaunchState {
-        IDLE,
-        PREPARE,
-        LAUNCH,
-    }
+
 
     private enum WiggleState {
         WIGGLE_BACK,
@@ -122,33 +112,16 @@ public class ContinuousShooting extends LinearOpMode {
         WIGGLING
     }
     private WiggleControl wiggleControl;
-    private enum LaunchControl {
-        LISTEN,
-        CORRECTING_HEADING,
-        LAUNCHING,
-    }
-    private LaunchControl launchControl;
-    private LaunchState launchState;
+
     final double WIGGLE_TIME = 1.0;
-    final int LAUNCHER_TARGET_VELOCITY = 1250;
-    final int LAUNCHER_MIN_VELOCITY = 1160;
-    final double FEED_TIME = 0.115; //was 0.20
-    final double TIME_BETWEEN_SHOTS = 2;
-    final double TIME_BETWEEN_SHOTS_BLOCKER_UP = 0.5;
-    private int targetVelocity = 1110;
     final double GOAL_ANGLE = 0.6;
     final double FAR_ANGLE = 1;
-    final double BLOCKER_UP = 0;
-    final double BLOCKER_DOWN = 1;
 
 
-    final double K_RANGE = 3.06;
-    final double K_PCT = 1080;
-    double pctShoot = 1;
+
     final int TARGET_VELOCITY_GOAL = 1110;
     final int TARGET_VELOCITY_FAR = 1750;
 
-    int launcherVelocity = 0;
 
     private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
@@ -171,6 +144,11 @@ public class ContinuousShooting extends LinearOpMode {
     double rightFrontPower;
     double leftBackPower;
     double rightBackPower;
+    // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
+    double axial   =  0;  // Note: pushing stick forward gives negative value
+    double lateral =  0;
+    double yaw     =  0;
+
 
     public void goForwardFor2Secs() {
         runtime.reset();
@@ -179,71 +157,39 @@ public class ContinuousShooting extends LinearOpMode {
             leftFrontDrive.setPower(.2);
         }
     }
-    boolean launch(boolean shotRequested){
-        switch (launchState) {
-            case IDLE:
-                if (shotRequested) {
-                    launchState = LaunchState.PREPARE;
-                    shotTimer.reset();
-                }
-                break;
-            case PREPARE:
-                launcherVelocity = targetVelocity;
-                if (launcher.getVelocity() > (targetVelocity*0.75)){
-                    launchState = LaunchState.LAUNCH;
-                    leftFeeder.setPower(1);
-                    rightFeeder.setPower(1);
-                    feederTimer.reset();
-                }
-                break;
-            case LAUNCH:
-                if (feederTimer.seconds() > FEED_TIME) {
-                    leftFeeder.setPower(0);
-                    rightFeeder.setPower(0);
 
-                    if(shotTimer.seconds() > TIME_BETWEEN_SHOTS_BLOCKER_UP){
-                        blocker.setPosition(BLOCKER_UP);
-                    }
-                    if(shotTimer.seconds() > TIME_BETWEEN_SHOTS){
-                        launchState = LaunchState.IDLE;
-                        //launcher.setVelocity(0);
-                        return true;
-                    }
-                }
-        }
-        return false;
-    }
 
-    boolean wiggleMachine() {
-        switch (wiggleState) {
-            case WIGGLE_BACK:
-                if (wiggleTimer.seconds() > WIGGLE_TIME) {
-                    // Always go back when wiggling
-                    launcherVelocity = -LAUNCHER_TARGET_VELOCITY;
-                    wiggleState =  WiggleState.WIGGLE_FRONT;
-                    wiggleTimer.reset();
-                    if (gamepad1.back) {
-                        return true;
-                    }
-                }
-                break;
-            case WIGGLE_FRONT:
-                if (wiggleTimer.seconds() > WIGGLE_TIME) {
-                    launcherVelocity = -LAUNCHER_TARGET_VELOCITY;
 
-                    wiggleState = WiggleState.WIGGLE_BACK;
-                    wiggleTimer.reset();
-                    if (gamepad1.back) {
-                        return true;
-                    }
+//    boolean wiggleMachine() {
+//        switch (wiggleState) {
+//            case WIGGLE_BACK:
+//                if (wiggleTimer.seconds() > WIGGLE_TIME) {
+//                    // Always go back when wiggling
+//                    launcherVelocity = -LAUNCHER_TARGET_VELOCITY;
+//                    wiggleState =  WiggleState.WIGGLE_FRONT;
+//                    wiggleTimer.reset();
+//                    if (gamepad1.back) {
+//                        return true;
+//                    }
+//                }
+//                break;
+//            case WIGGLE_FRONT:
+//                if (wiggleTimer.seconds() > WIGGLE_TIME) {
+//                    launcherVelocity = -LAUNCHER_TARGET_VELOCITY;
+//
+//                    wiggleState = WiggleState.WIGGLE_BACK;
+//                    wiggleTimer.reset();
+//                    if (gamepad1.back) {
+//                        return true;
+//                    }
+//
+//                }
+//                break;
+//        }
+//        return false;
+//    }
 
-                }
-                break;
-        }
-        return false;
-    }
-
-    public void moveRobot(double axial, double lateral, double yaw) {
+    public void moveRobot() {
 
         // Combine the joystick requests for each axis-motion to determine each wheel's power.
         // Set up a variable for each drive wheel to save the power level for telemetry.
@@ -372,6 +318,8 @@ public class ContinuousShooting extends LinearOpMode {
         }
     }
 
+
+
     @Override
     public void runOpMode() {
 
@@ -381,17 +329,14 @@ public class ContinuousShooting extends LinearOpMode {
         // Initialize the Apriltag Detection process
         initAprilTag();
 
+        launchPackage = new LaunchPackage(this);
+
         // Initialize the hardware variables. Note that the strings used here must correspond
         // to the names assigned during the robot configuration step on the DS or RC devices.
         leftFrontDrive  = hardwareMap.get(DcMotor.class, "left_front_drive");
         leftBackDrive  = hardwareMap.get(DcMotor.class, "left_back_drive");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
         rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
-        intake = hardwareMap.get(DcMotor.class, "intake");
-        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
-        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
-        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
-        blocker = hardwareMap.get(Servo.class, "blocker");
         angle = hardwareMap.get(Servo.class, "angle");
 
         if (USE_WEBCAM) {
@@ -446,10 +391,7 @@ public class ContinuousShooting extends LinearOpMode {
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
 
-        leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        launchState = LaunchState.IDLE;
-        launchControl = LaunchControl.LISTEN;
         wiggleState = WiggleState.WIGGLE_FRONT;
         wiggleControl = WiggleControl.WIGGLE_LISTEN;
 
@@ -461,25 +403,24 @@ public class ContinuousShooting extends LinearOpMode {
         runtime.reset();
         wiggleTimer.reset();
 
-        // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
-        double axial   =  0;  // Note: pushing stick forward gives negative value
-        double lateral =  0;
-        double yaw     =  0;
 
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             double max;
 
-            double intakePower = (gamepad1.left_trigger - gamepad1.right_trigger);
-            if (intakePower > 0){
-                blocker.setPosition(BLOCKER_UP);
-                if (launchState == LaunchState.IDLE){
-                    launcherVelocity = -100;
+            if (launchPackage.isInCorrectingHeadingMode()) {
+                if (desiredTag != null) {
+                    // set the axial yaw and lateral
+                    double bearing = desiredTag.ftcPose.bearing;
+                    double yawError = desiredTag.ftcPose.yaw;
+                    lateral = Range.clip(yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
+                    yaw = Range.clip(-bearing * 0.02, -MAX_AUTO_TURN, MAX_AUTO_TURN);
+                    axial = 0;
                 }
             }
 
-            double feederPower = 0.0;
+
 
             targetFound = false;
             desiredTag  = null;
@@ -541,124 +482,48 @@ public class ContinuousShooting extends LinearOpMode {
 
 
             // wiggle launch
-            switch (wiggleControl) {
-                case WIGGLE_LISTEN:
-                    if (gamepad1.start) {
-                        wiggleControl = WiggleControl.WIGGLING;
-                    }
-                    break;
-                case WIGGLING:
-                    boolean is_done_wiggling = wiggleMachine();
-                    if (is_done_wiggling) {
-                        launcherVelocity = 0;
-                        wiggleControl = WiggleControl.WIGGLE_LISTEN;
-                    }
-                    break;
-
-            }
-
-            if (gamepad1.dpad_left)
-                feederPower += 0.4;
-            if (gamepad1.dpad_right)
-                feederPower -= 0.4;
-
-            if (gamepad1.a)
-                blocker.setPosition(BLOCKER_UP);
-            if (gamepad1.b)
-                blocker.setPosition(BLOCKER_DOWN);
+//            switch (wiggleControl) {
+//                case WIGGLE_LISTEN:
+//                    if (gamepad1.start) {
+//                        wiggleControl = WiggleControl.WIGGLING;
+//                    }
+//                    break;
+//                case WIGGLING:
+//                    boolean is_done_wiggling = wiggleMachine();
+//                    if (is_done_wiggling) {
+//                        launcherVelocity = 0;
+//                        wiggleControl = WiggleControl.WIGGLE_LISTEN;
+//                    }
+//                    break;
+//
+//            }
 
 
 
-            if (gamepad1.dpad_up) {
-                pctShoot += 0.01;
-                sleep(20);
-            }
-            if (gamepad1.dpad_down) {
-                pctShoot -= 0.01;
-                sleep(20);
-            }
-            if (pctShoot > 2)
-                pctShoot = 2;
+
+
+
 
             //left bumper for normal, close to the goal, right bumper when farther away
 
+            launchPackage.launchCheck(desiredTag);
 
 
-            switch (launchControl) {
-                case LISTEN:
-                    leftFeeder.setPower(feederPower);
-                    rightFeeder.setPower(feederPower);
-                    if (desiredTag != null){
-                        targetVelocity = (int)(1.15 * (K_RANGE * desiredTag.ftcPose.range + K_PCT * pctShoot)); //equation
-                    } else {
-                        if (targetVelocity < LAUNCHER_TARGET_VELOCITY){
-                            targetVelocity = LAUNCHER_TARGET_VELOCITY;
-                        }
-                    }
-
-
-                    if (gamepad1.y) {
-                        blocker.setPosition(BLOCKER_DOWN);
-                        angle.setPosition(GOAL_ANGLE);
-
-                        launchControl = LaunchControl.CORRECTING_HEADING;
-                        correctingHeadingTimer.reset();
-                    }
-                    break;
-                case CORRECTING_HEADING:
-                    intakePower = 0.5;
-                    if (desiredTag != null) {
-                        double bearing = desiredTag.ftcPose.bearing;
-                        double yawError = desiredTag.ftcPose.yaw;
-                        lateral = Range.clip(yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
-                        yaw = Range.clip(-bearing * 0.02, -MAX_AUTO_TURN, MAX_AUTO_TURN);
-                        if (((bearing < 1) && (bearing > -1)) && ((yawError < 1) && (yawError > -1))) {
-                            launch(true);
-                            launchControl = LaunchControl.LAUNCHING;
-                        } else {
-                            axial = 0;
-                        }
-                    }
-                    if (gamepad1.x || correctingHeadingTimer.seconds() > 0.3){
-                        launch(true);
-                        launchControl = LaunchControl.LAUNCHING;
-                    }
-                    break;
-                case LAUNCHING:
-                    if(launch(false)) {
-                        launchControl = LaunchControl.LISTEN;
-                    }
-                    break;
-            }
 
             if ((axial  != 0) || (lateral != 0)|| (yaw != 0)) {
                 state = 0;
             }
 
-
-            if (gamepad1.back){
-                launcherVelocity = 0;
-            }
-
-            moveRobot(axial, lateral, yaw);
-
-            intake.setPower(intakePower);
-
-            launcher.setVelocity(launcherVelocity);
-
+            moveRobot();
 
 
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
             telemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
-            telemetry.addData("intake", intakePower);
-            telemetry.addData("launch_state", launchState);
-            telemetry.addData("launch_control", launchControl);
             telemetry.addData("wiggle_state", wiggleState);
             telemetry.addData("wiggle_control", wiggleControl);
             telemetry.addData("Status", "Wiggle_Time: " + wiggleTimer.toString());
-            telemetry.addData("Vc/V/pct:", "%4.2f/%d/%.2f" , launcher.getVelocity(), targetVelocity, pctShoot);
             telemetry.update();
         }
     }}
